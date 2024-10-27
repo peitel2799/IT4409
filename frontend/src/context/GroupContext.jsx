@@ -265,10 +265,15 @@ export const GroupProvider = ({ children }) => {
 
     // New message in a group
     const handleNewGroupMessage = ({ groupId, message }) => {
-      // Only add if we're viewing this group
-      if (selectedGroup && selectedGroup._id === groupId) {
+      // Check if this is our own message (we already added it optimistically)
+      const senderId = message.senderId?._id || message.senderId;
+      const isOwnMessage = senderId === authUser._id;
+
+      // Only add message to list if it's NOT our own message
+      // (our messages are added optimistically in sendGroupMessage)
+      if (!isOwnMessage && selectedGroup && selectedGroup._id === groupId) {
         setGroupMessages((prev) => {
-          // Avoid duplicates
+          // Avoid duplicates (extra safety check)
           if (prev.some((m) => m._id === message._id)) return prev;
           return [...prev, message];
         });
@@ -277,7 +282,7 @@ export const GroupProvider = ({ children }) => {
         markGroupAsRead(groupId);
       }
 
-      // Update group's position in list (most recent first)
+      // Update group's position in list (most recent first) - for all messages
       setGroups((prev) => {
         const updatedGroups = prev.map((group) =>
           group._id === groupId
