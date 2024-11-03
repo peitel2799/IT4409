@@ -75,3 +75,64 @@ export const getGroupByIdService = async (groupId, userId) => {
 
     return group;
 };
+
+/**
+ * Leave a group
+ */
+export const leaveGroupService = async (groupId, userId) => {
+    const group = await Group.findOne({
+        _id: groupId,
+        members: userId,
+    });
+
+    if (!group) {
+        throw new AppError("Group not found or you are not a member", 404);
+    }
+
+    // Check if user is the creator
+    const isCreator = group.createdBy.toString() === userId.toString();
+    
+    if (isCreator) {
+        // If creator is leaving, we have options:
+        // 1. Delete the group if they're the only member
+        // 2. Transfer ownership to another admin
+        // 3. Just prevent them from leaving (current approach for simplicity)
+        
+        if (group.members.length === 1) {
+            // Only member, delete the group
+            await Group.findByIdAndDelete(groupId);
+            return { deleted: true, groupId };
+        }
+        
+        // Transfer creator role to another admin or member
+        const otherAdmins = group.admins.filter(
+            (adminId) => adminId.toString() !== userId.toString()
+        );
+        
+        if (otherAdmins.length > 0) {
+            // Transfer to first admin
+            group.createdBy = otherAdmins[0];
+        } else {
+            // No other admins, promote first other member
+            const otherMembers = group.members.filter(
+                (memberId) => memberId.toString() !== userId.toString()
+            );
+            if (otherMembers.length > 0) {
+                group.createdBy = otherMembers[0];
+                group.admins.push(otherMembers[0]);
+            }
+        }
+    }
+
+    // Remove user from members and admins
+    group.members = group.members.filter(
+        (memberId) => memberId.toString() !== userId.toString()
+    );
+    group.admins = group.admins.filter(
+        (adminId) => adminId.toString() !== userId.toString()
+    );
+
+    await group.save();
+
+    return { deleted: false, group };
+};
