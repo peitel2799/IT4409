@@ -1,10 +1,14 @@
-import { X, Users, Search, Crown, UserMinus } from "lucide-react";
+import { useState } from "react";
+import { X, Users, Search, Crown, UserMinus, Loader2 } from "lucide-react";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
+import { useGroup } from "../../../context/GroupContext";
 
 export default function GroupInfoSidebar({ group, onClose }) {
   const { onlineUsers } = useSocket();
   const { authUser } = useAuth();
+  const { leaveGroup } = useGroup();
+  const [isLeaving, setIsLeaving] = useState(false);
 
   if (!group) return null;
 
@@ -34,6 +38,21 @@ export default function GroupInfoSidebar({ group, onClose }) {
   const isOnline = (userId) => {
     const id = userId?._id || userId;
     return onlineUsers.includes(id);
+  };
+
+  // Handle leave group
+  const handleLeaveGroup = async () => {
+    if (!confirm("Are you sure you want to leave this group?")) return;
+
+    setIsLeaving(true);
+    try {
+      await leaveGroup(group._id);
+      onClose();
+    } catch (error) {
+      // Error is handled in context
+    } finally {
+      setIsLeaving(false);
+    }
   };
 
   return (
@@ -162,9 +181,22 @@ export default function GroupInfoSidebar({ group, onClose }) {
 
         {/* Leave Group Button */}
         <div className="p-4 border-t border-gray-100">
-          <button className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-500 px-3 py-2.5 rounded-xl hover:bg-red-100 transition font-medium text-sm">
-            <UserMinus size={16} />
-            Leave Group
+          <button
+            onClick={handleLeaveGroup}
+            disabled={isLeaving}
+            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-500 px-3 py-2.5 rounded-xl hover:bg-red-100 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLeaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Leaving...
+              </>
+            ) : (
+              <>
+                <UserMinus size={16} />
+                Leave Group
+              </>
+            )}
           </button>
         </div>
       </div>

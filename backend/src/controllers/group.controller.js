@@ -3,6 +3,7 @@ import {
     createGroupService,
     getGroupsByUserIdService,
     getGroupByIdService,
+    leaveGroupService,
 } from "../services/group.service.js";
 
 /**
@@ -71,6 +72,21 @@ export const getGroupById = async (req, res) => {
         res.status(200).json(group);
     } catch (error) {
         console.error("getGroupById:", error);
+        res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+    }
+};
+
+/**
+ * Leave a group
+ */
+export const leaveGroup = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { groupId } = req.params;
+        const result = await leaveGroupService(groupId, userId);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("leaveGroup:", error);
         res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
     }
 };

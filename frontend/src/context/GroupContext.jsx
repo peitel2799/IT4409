@@ -250,6 +250,49 @@ export const GroupProvider = ({ children }) => {
     [socket]
   );
 
+  /**
+   * Leave a group
+   */
+  const leaveGroup = useCallback(
+    async (groupId) => {
+      try {
+        const res = await axiosInstance.post(`/groups/${groupId}/leave`);
+        const result = res.data;
+
+        if (result.deleted) {
+          // Group was deleted (user was the only member)
+          toast.success("Group deleted");
+        } else {
+          toast.success("Left group successfully");
+        }
+
+        // Remove group from list
+        setGroups((prev) => prev.filter((g) => g._id !== groupId));
+
+        // Clear selection if this group was selected
+        if (selectedGroup && selectedGroup._id === groupId) {
+          setSelectedGroup(null);
+          setGroupMessages([]);
+        }
+
+        // Leave socket room
+        if (socket) {
+          socket.emit("group:leave", { groupId });
+        }
+
+        return result;
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            "Failed to leave group"
+        );
+        throw error;
+      }
+    },
+    [socket, selectedGroup]
+  );
+
   // --- EFFECTS ---
 
   // Load groups when user logs in
@@ -384,6 +427,7 @@ export const GroupProvider = ({ children }) => {
     getGroupById,
     createGroup,
     isCreatingGroup,
+    leaveGroup,
 
     // Group Messages
     groupMessages,

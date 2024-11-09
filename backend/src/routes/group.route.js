@@ -2,7 +2,7 @@ import express from "express";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import upload from "../middleware/multer.middleware.js";
-import { createGroup, getGroups, getGroupById } from "../controllers/group.controller.js";
+import { createGroup, getGroups, getGroupById, leaveGroup } from "../controllers/group.controller.js";
 
 const router = express.Router();
 
@@ -16,5 +16,8 @@ router.get("/", getGroups);
 
 // Get a specific group by ID
 router.get("/:groupId", getGroupById);
+
+// Leave a group
+router.post("/:groupId/leave", leaveGroup);
 
 export default router;
