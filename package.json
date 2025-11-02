@@ -1,5 +1,5 @@
 {
-  "name": "chat-realtime",
+  "name": "project-it4409",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,6 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "dev": "npm run dev --prefix backend",
     "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
     "start": "npm run start --prefix backend"
   },
@@ -20,8 +21,5 @@
   "bugs": {
     "url": "https://github.com/peitel2799/IT4409/issues"
   },
-  "homepage": "https://github.com/peitel2799/IT4409#readme",
-  "dependencies": {
-    "resend": "^6.4.0"
-  }
+  "homepage": "https://github.com/peitel2799/IT4409#readme"
 }

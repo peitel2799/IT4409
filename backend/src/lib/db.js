@@ -4,13 +4,12 @@ import { ENV } from "./env.js";
 export const connectDB = async () => {
     try {
         const {MONGO_URI} = ENV;
-<<<<<<< HEAD
         if(!MONGO_URI) {
             throw new Error("MONGO_URI is not set");
         }
 
         
-        const conn = await mongoos      e.connect(ENV.MONGO_URI);
+        const conn = await mongoose.connect(ENV.MONGO_URI);
         console.log('Connected to MongoDB successfully', conn.connection.host );
     } catch (error) {
         console.error('Error connection to MongoDB:', error);
@@ -19,13 +18,3 @@ export const connectDB = async () => {
         
     } ;
 };
-=======
-        if (!MONGO_URI) throw new Error("MONGO_URI is not set")
-        const conn = await mongoose.connect(ENV.MONGO_URI);
-        console.log("MONGODB CONNECTED:", conn.connection.host)
-    } catch(error) {
-        console.error("Error connection to MONGODB:", error);
-        process.exit(1);
-    }
-}
->>>>>>> tiep
