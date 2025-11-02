@@ -9,7 +9,7 @@ export const connectDB = async() => {
         }
 
         
-        const conn = await mongoose.connect(ENV.MONGO_URI);
+        const conn = await mongoos      e.connect(ENV.MONGO_URI);
         console.log('Connected to MongoDB successfully', conn.connection.host );
     } catch (error) {
         console.error('Error connection to MongoDB:', error);
