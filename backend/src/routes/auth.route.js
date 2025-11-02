@@ -1,16 +1,19 @@
-import express from 'express';
-import { signup } from '../controllers/auth.controller.js';
+import express from "express";
+import { login, logout, signup, updateProfile } from "../controllers/auth.controller.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
+import { apiLimiter } from "../middleware/ratelimit.middleware.js";
 
 const router = express.Router();
+router.use(apiLimiter); 
 
-router.get("/login", (req, res) => {
-  res.send("Login endpoint");
-});
+router.post("/signup", signup);
 
-router.post("/signup", signup );
+router.post("/login", login);
 
-router.get("/logout", (req, res) => {
-  res.send("Logout endpoint");
-})
+router.post("/logout", logout);
+
+router.put("/update-profile", protectRoute, updateProfile);
+
+router.get("/check", protectRoute, (req,res) => res.status(200).json(req.user));
 
 export default router;

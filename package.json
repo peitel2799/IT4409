@@ -1,5 +1,5 @@
 {
-  "name": "btl_web",
+  "name": "chat-realtime",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -22,6 +22,6 @@
   },
   "homepage": "https://github.com/peitel2799/IT4409#readme",
   "dependencies": {
-    "mongodb": "^6.20.0"
+    "resend": "^6.4.0"
   }
 }
