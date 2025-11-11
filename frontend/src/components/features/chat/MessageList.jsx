@@ -1,7 +1,7 @@
-import { useEffect, useRef, useMemo } from "react";
-import { useChat } from "../../../context/ChatContext";
-import { useAuth } from "../../../context/AuthContext";
 import { LoaderIcon } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { useChat } from "../../../context/ChatContext";
 import MessageBubble from "./MessageBubble";
 
 function formatDate(dateStr) {
@@ -73,14 +73,16 @@ export default function MessageList({ chat }) {
             </span>
           </div>
           <div className="space-y-1">
-            {msgs.map((msg) => {
+            {msgs.map((msg, index) => {
               const senderId = msg.senderId?._id || msg.senderId;
               const isMe = senderId === authUser?._id;
               const getFallbackAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=random`;
 
-              const messageAvatar = isMe 
+              const messageAvatar = isMe
                 ? (authUser?.profilePic || getFallbackAvatar(authUser?.fullName))
                 : (msg.senderId?.profilePic || chat.profilePic || getFallbackAvatar(chat.fullName));
+
+              const isLastInGroup = !msgs[index + 1] || (msgs[index + 1].senderId?._id || msgs[index + 1].senderId) !== senderId;
 
               return (
                 <MessageBubble
@@ -88,6 +90,7 @@ export default function MessageList({ chat }) {
                   message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
                   isMe={isMe}
                   avatar={messageAvatar}
+                  isLastInGroup={isLastInGroup}
                 />
               );
             })}

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useChat } from "../../../context/ChatContext";
 import "../../../styles/emoji-picker.css";
 
-export default function MessageBubble({ message, isMe, avatar }) {
+export default function MessageBubble({ message, isMe, avatar, isLastInGroup }) {
   const [showReactionBar, setShowReactionBar] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
   const { reactToMessage } = useChat();
@@ -79,13 +79,15 @@ export default function MessageBubble({ message, isMe, avatar }) {
           )}
           {message.text}
         </div>
-        {/* Time Stamp */}
-        <span className={`text-[10px] text-gray-400 px-1 transition-opacity select-none absolute -bottom-5 w-max
-            ${showReactionBar ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
-            ${isMe ? "right-1" : "left-1"}
-          `}>
-          {message.displayTime} {isMe && message.isRead && "Seen"} {isMe && !message.isRead && "Sent"}
-        </span>
+
+        {/* Timestamp */}
+        {isLastInGroup && (
+          <span className={`text-[10px] text-gray-400 px-1 select-none absolute -bottom-5 w-max
+              ${isMe ? "right-1" : "left-1"}
+            `}>
+            {message.displayTime} {isMe && message.isRead && "Seen"} {isMe && !message.isRead && "Sent"}
+          </span>
+        )}
       </div>
 
       {/* Reaction Trigger Button (Smile Icon) */}
