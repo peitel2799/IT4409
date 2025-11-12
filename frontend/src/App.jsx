@@ -4,32 +4,22 @@ import HomePage from './pages/HomePage';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
-import './App.css';
-
+import AuthLayout from './components/layouts/AuthLayout';
 
 
 export default function App() {
 
   
 
-  return (
-    
+  return (    
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/chat" element={<ChatPage />} />
 
-    <div className="min-h-screen relative bg-gray-100 flex items-center justify-center p-4 overflow-hidden"> 
-      {/* Background effects */}
-      <div className="background" />
-      {/* Content */}
-      <div className="content-wrapper">
-        
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-        </Routes>
-  
-        
-      </div>
-    </div>
+      <Route element={<AuthLayout />}>
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
+    </Routes>
   );
 }
