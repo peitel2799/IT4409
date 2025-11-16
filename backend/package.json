@@ -12,10 +12,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@arcjet/node": "^1.0.0-beta.15",
+    "@arcjet/inspect": "^1.0.0-beta.15",
     "bcryptjs": "^2.4.3",
     "btl_web": "file:..",
     "chat-realtime": "file:..",
     "cloudinary": "^2.8.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
@@ -24,5 +27,8 @@
     "mongoose": "^8.10.1",
     "resend": "^6.0.2",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
 }
