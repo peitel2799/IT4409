@@ -1,4 +1,5 @@
-import { X, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Image as ImageIcon, X } from "lucide-react";
+import { useState } from "react";
 
 const InfoItem = ({ icon: Icon, label }) => (
   <button className="flex items-center w-full p-3 hover:bg-gray-50 rounded-xl transition-colors text-gray-600 gap-3">
@@ -10,6 +11,12 @@ const InfoItem = ({ icon: Icon, label }) => (
 );
 
 export default function InfoSidebar({ chat, onClose }) {
+  const [isMediaOpen, setIsMediaOpen] = useState(false);
+
+  const mockImages = Array.from({ length: 9 }).map((_, i) => ({
+    id: i,
+    url: `https://picsum.photos/seed/${i + 133}/300/300`,
+  }));
 
   const avatarUrl = chat?.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat?.fullName || 'User')}&background=random`;
   return (
@@ -40,12 +47,52 @@ export default function InfoSidebar({ chat, onClose }) {
           </p>
         </div>
 
+        {/* Shared Media Section */}
+        <div className="py-2">
+          <button
+            onClick={() => setIsMediaOpen(!isMediaOpen)}
+            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3 text-gray-700">
+              <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
+                <ImageIcon size={18} />
+              </div>
+              <span className="font-semibold text-sm">Shared Media</span>
+            </div>
+            {isMediaOpen ? <ChevronDown size={18} className="text-gray-400" /> : <ChevronRight size={18} className="text-gray-400" />}
+          </button>
 
-          {/* Delete Button
+          {isMediaOpen && (
+            <div className="p-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              {mockImages.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-2">
+                  {mockImages.map((img) => (
+                    <div key={img.id} className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg bg-gray-100">
+                      <img
+                        src={img.url}
+                        alt="Shared"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-400">No media shared yet</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+
+        {/* Delete Button
           <button className="w-full bg-pink-500 text-white px-3 py-2 rounded-lg hover:bg-pink-600 transition">
             Delete Conversation
           </button> */}
-        </div>
       </div>
+    </div>
   );
 }
