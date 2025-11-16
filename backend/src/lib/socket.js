@@ -3,7 +3,7 @@ import http from "http";
 import express from "express";
 import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
-
+import Message from "../models/Message.js";
 const app = express();
 const server = http.createServer(app);
 
@@ -33,6 +33,33 @@ io.on("connection", (socket) => {
 
   // io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  // update all messages from partnerId sent to myUserId to "seen"
+  socket.on("markAsRead", async(data) => {
+    try {
+      const {partnerId} = data;
+      const myUserId = socket.userId;
+
+      await Message.updateMany(
+        {
+          senderId: partnerId,
+          receiverId: myUserId,
+          isRead: false,
+        },
+        {$set: {isRead: true}}
+      );
+
+      //notify to senders that their messages was read
+      const senderSocketId = getReceiverSocketId(partnerId);
+      if(senderSocketId){
+        io.to(senderSocketId).emit("messagesRead", {
+          partnerId: myUserId,
+        });
+      }
+      }catch(error){
+        console.log("Error marking messages as read: ", error);
+      }
+  });
 
   // with socket.on we listen for events from clients
   socket.on("disconnect", () => {
