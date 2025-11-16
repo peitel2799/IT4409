@@ -9,7 +9,7 @@ import InfoSidebar from "../components/chat/messages/InfoSidebar";
 import FriendsList from "../components/chat/contact/FriendsList"; 
 
 import SettingsSidebar from "../components/chat/settings/SettingsSidebar";
-import SettingsDetail from "../components/chat//SettingsDetail";
+import SettingsDetail from "../components/chat/SettingsDetail";
 
 export default function ChatPage() {
   const { authUser, isCheckingAuth } = useAuth();
