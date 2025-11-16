@@ -9,7 +9,9 @@ import {
   reactToMessageService,
   searchAllMessagesService,
   searchMessagesService,
-  sendMessageService
+  sendMessageService,
+  getGroupMessagesService,
+  sendGroupMessageService,
 } from "../services/message.service.js";
 
 // Helper to emit to all sockets of a user
@@ -175,6 +177,51 @@ export const searchAllMessages = async (req, res) => {
     res.status(200).json(messages);
   } catch (error) {
     console.error("searchAllMessages:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+// ==================== GROUP MESSAGE CONTROLLERS ====================
+
+export const getGroupMessages = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { groupId } = req.params;
+
+    const messages = await getGroupMessagesService(groupId, userId);
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("getGroupMessages:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+export const sendGroupMessage = async (req, res) => {
+  try {
+    const { text } = req.body;
+    const { groupId } = req.params;
+    const senderId = req.user._id;
+
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await uploadOnCloudinary(req.file.path);
+    }
+
+    const { message, group } = await sendGroupMessageService(senderId, groupId, text, imageUrl);
+
+    // Emit socket event to all group members (except sender)
+    group.members.forEach((memberId) => {
+      if (memberId.toString() !== senderId.toString()) {
+        emitToUser(memberId, "group:newMessage", {
+          groupId,
+          message,
+        });
+      }
+    });
+
+    res.status(201).json(message);
+  } catch (error) {
+    console.error("sendGroupMessage:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

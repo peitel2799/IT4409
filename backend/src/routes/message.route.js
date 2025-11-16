@@ -9,6 +9,8 @@ import {
   searchAllMessages,
   searchMessages,
   sendMessage,
+  getGroupMessages,
+  sendGroupMessage,
 } from "../controllers/message.controller.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -36,5 +38,9 @@ router.put("/:messageId/read", markMessageAsRead);
 
 // React to a message
 router.put("/:messageId/react", reactToMessage);
+
+// Group message routes
+router.get("/group/:groupId", getGroupMessages);
+router.post("/group/:groupId/send", upload.single('image'), sendGroupMessage);
 
 export default router;

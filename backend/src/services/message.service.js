@@ -1,5 +1,6 @@
 import Message from "../models/Message.js";
 import User from "../models/User.js";
+import Group from "../models/Group.js";
 import { AppError } from "./AppError.js";
 
 /**
@@ -242,4 +243,52 @@ export const searchAllMessagesService = async (userId, searchQuery) => {
         .limit(100);
 
     return messages;
+};
+
+// ==================== GROUP MESSAGE SERVICES ====================
+
+/**
+ * Get messages for a group
+ */
+export const getGroupMessagesService = async (groupId, userId) => {
+    // Verify user is a member of the group
+    const group = await Group.findOne({ _id: groupId, members: userId });
+    if (!group) {
+        throw new AppError("Group not found or you are not a member", 404);
+    }
+
+    const messages = await Message.find({ groupId })
+        .populate("senderId", "fullName profilePic email")
+        .sort({ createdAt: 1 });
+
+    return messages;
+};
+
+/**
+ * Send a message to a group
+ */
+export const sendGroupMessageService = async (senderId, groupId, text, imageUrl) => {
+    if (!text && !imageUrl) {
+        throw new AppError("Text or image is required", 400);
+    }
+
+    // Verify user is a member of the group
+    const group = await Group.findOne({ _id: groupId, members: senderId });
+    if (!group) {
+        throw new AppError("Group not found or you are not a member", 404);
+    }
+
+    const newMessage = new Message({
+        senderId,
+        groupId,
+        text,
+        image: imageUrl,
+    });
+
+    await newMessage.save();
+
+    // Populate sender info before returning
+    await newMessage.populate("senderId", "fullName profilePic email");
+
+    return { message: newMessage, group };
 };
