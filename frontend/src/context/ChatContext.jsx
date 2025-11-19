@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
+import { useAuth } from "./AuthContext";
+import { io } from "socket.io-client";
 
 const ChatContext = createContext();
 
@@ -15,6 +17,49 @@ export const ChatProvider = ({ children }) => {
   const [isSoundEnabled, setIsSoundEnabled] = useState(
     () => JSON.parse(localStorage.getItem("isSoundEnabled")) === true
   );
+  const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const { authUser } = useAuth();
+
+  // Initialize socket connection
+  useEffect(() => {
+    if (authUser) {
+      const newSocket = io("http://localhost:3000", {
+        query: {
+          userId: authUser._id,
+        },
+        withCredentials: true,
+      });
+
+      newSocket.on("getOnlineUsers", (userIds) => {
+        setOnlineUsers(userIds);
+      });
+
+      newSocket.on("receiveMessage", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+        if (isSoundEnabled) {
+          // Play notification sound if enabled
+        }
+      });
+
+      newSocket.on("messagesRead", (data) => {
+        // Update UI to show messages are read
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.senderId === authUser._id && msg.receiverId === data.partnerId
+              ? { ...msg, isRead: true }
+              : msg
+          )
+        );
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [authUser, isSoundEnabled]);
 
   const toggleSound = useCallback(() => {
     const newSoundState = !isSoundEnabled;
@@ -61,12 +106,50 @@ export const ChatProvider = ({ children }) => {
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
       setMessages(res.data);
+
+      // Mark all received messages as read when opening chat
+      if (socket) {
+        socket.emit("markAsRead", { partnerId: userId });
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to load messages");
     } finally {
       setIsMessagesLoading(false);
     }
-  }, []);
+  }, [socket]);
+
+  const sendMessage = useCallback(
+    async (receiverId, text, image = null) => {
+      if (!text && !image) {
+        toast.error("Message cannot be empty");
+        return;
+      }
+
+      if (socket) {
+        socket.emit("sendMessage", {
+          receiverId,
+          text,
+          image,
+        });
+      }
+    },
+    [socket]
+  );
+
+  const markAsRead = useCallback(
+    async (partnerId) => {
+      try {
+        await axiosInstance.post(`/messages/read/${partnerId}`);
+
+        if (socket) {
+          socket.emit("markAsRead", { partnerId });
+        }
+      } catch (error) {
+        console.log("Error marking messages as read:", error);
+      }
+    },
+    [socket]
+  );
 
   const value = {
     allContacts,
@@ -77,12 +160,16 @@ export const ChatProvider = ({ children }) => {
     isUsersLoading,
     isMessagesLoading,
     isSoundEnabled,
+    socket,
+    onlineUsers,
     toggleSound,
     setActiveTab: customSetActiveTab,
     setSelectedUser: customSetSelectedUser,
     getAllContacts,
     getMyChatPartners,
     getMessagesByUserId,
+    sendMessage,
+    markAsRead,
   };
 
   return (

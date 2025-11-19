@@ -35,10 +35,16 @@ export default function MessageBubble({ message, isMe, avatar }) {
         }`}
       >
         <p>{message.text}</p>
-        <span className="text-xs text-gray-600 mt-1 block text-right">
-          {message.displayTime}
-        </span>
-
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <span className="text-xs text-gray-600">
+            {message.displayTime}
+          </span>
+          {isMe && (
+            <span className="text-xs" title={message.isRead ? "Read" : "Sent"}>
+              {message.isRead ? "✓✓" : "✓"}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

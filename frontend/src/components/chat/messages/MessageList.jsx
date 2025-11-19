@@ -1,6 +1,7 @@
 import MessageBubble from "./MessageBubble";
 import { useEffect, useRef, useMemo } from "react"; 
-import { useChat } from "../../../context/ChatContext"; 
+import { useChat } from "../../../context/ChatContext";
+import { useAuth } from "../../../context/AuthContext";
 
 function formatDate(dateStr) {
   const date = new Date(dateStr);
@@ -28,6 +29,7 @@ function formatTime(dateStr) {
 
 export default function MessageList({ chat }) {
   const messagesEndRef = useRef(null);
+  const { authUser } = useAuth();
  
   const {
     messages,            // State tin nhắn từ context
@@ -36,10 +38,8 @@ export default function MessageList({ chat }) {
   } = useChat();
 
   useEffect(() => {
-    // Luôn gọi hàm getMessages. 
-    // Nếu 'chat' là null, 'chat.id' sẽ là undefined.
-    // Hàm context sẽ xử lý việc này và tự động xóa messages.
-    getMessagesByUserId(chat?.id); 
+    // Gọi hàm getMessages với chat._id (MongoDB ObjectId)
+    getMessagesByUserId(chat?._id); 
     
   }, [chat, getMessagesByUserId]); 
 
@@ -47,7 +47,8 @@ export default function MessageList({ chat }) {
   const groupedMessages = useMemo(() => {
     const groups = {};
     for (const msg of messages) { 
-      const dateKey = new Date(msg.time).toDateString();
+      // Sử dụng 'createdAt' thay vì 'time' (MongoDB timestamp)
+      const dateKey = new Date(msg.createdAt || msg.time).toDateString();
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(msg);
     }
@@ -80,15 +81,19 @@ export default function MessageList({ chat }) {
         <div key={dateKey}>
           <div className="text-center my-4">
             <span className="text-xs text-yellow-800 bg-[#FAFDC6] rounded-full px-3 py-1">
-              {formatDate(messages[0].time)}
+              {formatDate(messages[0].createdAt || messages[0].time)}
             </span>
           </div>
           {messages.map((msg) => (
             <MessageBubble
-              key={msg.id}
-              message={{ ...msg, displayTime: formatTime(msg.time) }}
-              isMe={msg.senderId === 0} 
-              avatar={chat.avatar}
+              key={msg._id}
+              message={{ 
+                ...msg, 
+                displayTime: formatTime(msg.createdAt || msg.time),
+                isRead: msg.isRead 
+              }}
+              isMe={msg.senderId === authUser?._id || msg.senderId === 0} 
+              avatar={chat.avatar || chat.profilePic}
             />
           ))}
         </div>

@@ -106,3 +106,70 @@ export const getChatPartners = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const markAsRead = async (req, res) => {
+  try {
+    const myUserId = req.user._id;
+    const { partnerId } = req.params;
+
+    if (!partnerId) {
+      return res.status(400).json({ message: "Partner ID is required" });
+    }
+
+    // Update all messages sent by partner to current user as read
+    const result = await Message.updateMany(
+      {
+        senderId: partnerId,
+        receiverId: myUserId,
+        isRead: false,
+      },
+      { $set: { isRead: true } }
+    );
+
+    // Notify sender that messages were read via socket.io
+    const senderSocketId = getReceiverSocketId(partnerId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messagesRead", {
+        partnerId: myUserId.toString(),
+      });
+    }
+
+    res.status(200).json({ 
+      message: "Messages marked as read",
+      updatedCount: result.modifiedCount 
+    });
+  } catch (error) {
+    console.log("Error in markAsRead controller:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const markMessageAsRead = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await Message.findByIdAndUpdate(
+      messageId,
+      { isRead: true },
+      { new: true }
+    );
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Notify sender that message was read
+    const senderSocketId = getReceiverSocketId(message.senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messageRead", {
+        messageId: messageId,
+        readBy: req.user._id,
+      });
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    console.log("Error in markMessageAsRead controller:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

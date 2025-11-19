@@ -34,10 +34,41 @@ io.on("connection", (socket) => {
   // io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  // update all messages from partnerId sent to myUserId to "seen"
-  socket.on("markAsRead", async(data) => {
+  // Handle sending messages via socket
+  socket.on("sendMessage", async (data) => {
     try {
-      const {partnerId} = data;
+      const { receiverId, text, image } = data;
+      const senderId = socket.userId;
+
+      // Create new message document
+      const newMessage = new Message({
+        senderId,
+        receiverId,
+        text,
+        image,
+        isRead: false,
+      });
+
+      await newMessage.save();
+
+      // Emit message to receiver if online
+      const receiverSocketId = getReceiverSocketId(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receiveMessage", newMessage);
+      }
+
+      // Emit confirmation back to sender
+      socket.emit("messageSent", newMessage);
+    } catch (error) {
+      console.log("Error in sendMessage socket event:", error);
+      socket.emit("error", { message: "Failed to send message" });
+    }
+  });
+
+  // Update all messages from partnerId sent to myUserId to "seen"
+  socket.on("markAsRead", async (data) => {
+    try {
+      const { partnerId } = data;
       const myUserId = socket.userId;
 
       await Message.updateMany(
@@ -46,19 +77,19 @@ io.on("connection", (socket) => {
           receiverId: myUserId,
           isRead: false,
         },
-        {$set: {isRead: true}}
+        { $set: { isRead: true } }
       );
 
-      //notify to senders that their messages was read
+      // Notify sender that their messages were read
       const senderSocketId = getReceiverSocketId(partnerId);
-      if(senderSocketId){
+      if (senderSocketId) {
         io.to(senderSocketId).emit("messagesRead", {
-          partnerId: myUserId,
+          partnerId: myUserId.toString(),
         });
       }
-      }catch(error){
-        console.log("Error marking messages as read: ", error);
-      }
+    } catch (error) {
+      console.log("Error marking messages as read: ", error);
+    }
   });
 
   // with socket.on we listen for events from clients
