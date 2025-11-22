@@ -331,7 +331,7 @@ export default function CallPage() {
 
   // --- CSS for screens ---
   const fullScreen = `absolute inset-0 w-full h-full object-cover z-0`;
-  const smallScreen = `absolute top-5 right-5 w-48 h-36 bg-gray-800 rounded-xl border border-white/20 shadow-2xl cursor-pointer overflow-hidden z-20`;
+  const smallScreen = `absolute top-4 right-4 w-32 h-44 md:w-48 md:h-36 bg-gray-800 rounded-xl border border-white/20 shadow-2xl cursor-pointer overflow-hidden z-20 transition-all`;
 
   // Refs for audio element (separate from video for reliable audio playback)
   const remoteAudioRef = useRef(null);
@@ -463,15 +463,15 @@ export default function CallPage() {
       )}
 
       {/* --- Control Bar --- */}
-      <div className="absolute bottom-8 flex gap-4 px-6 py-4 bg-gray-900/60 backdrop-blur-xl rounded-full border border-gray-700 shadow-2xl z-40">
+      <div className="absolute bottom-6 md:bottom-8 flex gap-2 md:gap-4 px-4 py-3 md:px-6 md:py-4 bg-gray-900/60 backdrop-blur-xl rounded-full border border-gray-700 z-40">
         <button
           onClick={handleToggleMic}
-          className={`p-4 rounded-full transition-all ${
+          className={`p-3 md:p-4 rounded-full transition-all ${
             isMicOn ? "bg-gray-700 hover:bg-gray-600" : "bg-red-500 hover:bg-red-600"
           }`}
           title={isMicOn ? "Mute" : "Unmute"}
         >
-          {isMicOn ? <Mic size={24} /> : <MicOff size={24} />}
+          {isMicOn ? <Mic size={20} className="md:w-6 md:h-6" /> : <MicOff size={20} className="md:w-6 md:h-6" />}
         </button>
 
         {isVideoCall && (
@@ -482,7 +482,7 @@ export default function CallPage() {
             }`}
             title={isCamOn ? "Turn off camera" : "Turn on camera"}
           >
-            {isCamOn ? <Video size={24} /> : <VideoOff size={24} />}
+            {isCamOn ? <Video size={20} className="md:w-6 md:h-6" /> : <VideoOff size={20} className="md:w-6 md:h-6" />}
           </button>
         )}
 
@@ -491,7 +491,7 @@ export default function CallPage() {
           className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-all"
           title="End call"
         >
-          <PhoneOff size={24} />
+          <PhoneOff size={20} className="md:w-6 md:h-6" />
         </button>
 
         <button
@@ -499,7 +499,7 @@ export default function CallPage() {
           className="p-4 rounded-full bg-gray-700 hover:bg-gray-600 transition-all"
           title="Swap views"
         >
-          <ArrowLeftRight size={24} />
+          <ArrowLeftRight size={20} className="md:w-6 md:h-6" />
         </button>
       </div>
     </div>

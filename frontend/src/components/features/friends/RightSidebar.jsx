@@ -19,7 +19,6 @@ export default function RightSidebar({ onStartChat }) {
   // Get avatar with fallback
   const getAvatar = (user) =>
     user.profilePic ||
-    user.profilePic ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       user.fullName || user.name || "U"
     )}`;

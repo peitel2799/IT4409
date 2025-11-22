@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Send, CheckCircle, Plus, X, Loader } from "lucide-react";
+import { Mail, Send, CheckCircle, Plus, X, Loader , UserPlus} from "lucide-react";
 import toast from "react-hot-toast";
 import { useFriend } from "../../../context/FriendContext";
 
@@ -75,7 +75,7 @@ export default function AddFriendButton() {
 
                         <div className="text-center mb-6">
                             <div className="bg-pink-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-pink-500">
-                                <UserPlusIcon size={32} />
+                                <UserPlus size={32} />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-800">Add Friend</h2>
                             <p className="text-sm text-gray-500 mt-1">Enter email to send request</p>
@@ -120,8 +120,3 @@ export default function AddFriendButton() {
     );
 }
 
-const UserPlusIcon = ({ size, className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
-    </svg>
-);

@@ -39,16 +39,16 @@ function LoginPage() {
   };
 
   return (
-    <div className="w-full flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="md:w-1/2 p-8 flex items-center justify-center border-r border-gray-200">
+    <div className="w-full min-h-screen md:min-h-[600px] flex flex-col md:flex-row bg-white overflow-y-auto">
+      <div className="w-full md:w-1/2 p-8 flex items-center justify-center border-r border-gray-200">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <MessageCircleIcon className="w-12 h-12 mx-auto text-pink-400 mb-4" />
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Login</h2>
+          <div className="text-center mb-6 md:mb-8">
+            <MessageCircleIcon className="w-10 h-10 md:w-12 md:h-12 mx-auto text-pink-400 mb-4" />
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Login</h2>
             <p className="text-gray-500">Sign in to your account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             <div>
               <label className="block text-gray-700 font-medium mb-1">Email</label>
               <div className="relative">
@@ -108,7 +108,7 @@ function LoginPage() {
       </div>
 
       <div
-        className="md:block md:w-1/2 bg-cover bg-center flex overflow-hidden"
+        className="md:block md:w-1/2 bg-cover bg-center hidden"
         style={{ backgroundImage: "url('/sample.png')" }}
       ></div>
     </div>

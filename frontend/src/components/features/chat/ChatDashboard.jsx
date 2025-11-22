@@ -9,12 +9,14 @@ export default function ChatDashboard() {
   const [isInfoSidebarOpen, setIsInfoSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-full w-full overflow-hidden rounded-3xl bg-white shadow-sm">
-      <div className="w-80 h-full flex-shrink-0 border-r border-gray-50">
+    <div className="flex h-full w-full overflow-hidden rounded-3xl bg-white shadow-sm relative">
+      {/* Sidebar: Ẩn trên mobile nếu đã chọn user */}
+      <div className={`${selectedUser ? "hidden md:flex" : "flex"} w-full md:w-80 h-full flex-shrink-0 border-r border-gray-50`}>
         <ConversationSidebar selectedChat={selectedUser} onChatSelect={setSelectedUser} />
       </div>
       
-      <div className="flex-1 h-full min-w-0">
+      {/* Chat Area: Ẩn trên mobile nếu chưa chọn user */}
+      <div className={`${selectedUser ? "flex" : "hidden md:flex"} flex-1 h-full min-w-0`}>
         <ChatArea 
           chat={selectedUser} 
           onToggleInfoSidebar={() => setIsInfoSidebarOpen(!isInfoSidebarOpen)} 
@@ -22,10 +24,18 @@ export default function ChatDashboard() {
         />
       </div>
 
+      {/* Info Sidebar: Trên mobile sẽ là overlay fixed, desktop là hidden xl:block */}
       {isInfoSidebarOpen && selectedUser && (
-        <div className="w-80 h-full flex-shrink-0 hidden xl:block border-l border-gray-50">
-            <InfoSidebar chat={selectedUser} onClose={() => setIsInfoSidebarOpen(false)} />
-        </div>
+        <>
+          {/* Overlay cho mobile */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-40 xl:hidden" 
+            onClick={() => setIsInfoSidebarOpen(false)}
+          />
+          <div className="fixed right-0 top-0 bottom-0 w-[280px] z-50 xl:relative xl:w-80 h-full flex-shrink-0 border-l border-gray-50 bg-white shadow-xl xl:shadow-none">
+              <InfoSidebar chat={selectedUser} onClose={() => setIsInfoSidebarOpen(false)} />
+          </div>
+        </>
       )}
     </div>
   );

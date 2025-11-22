@@ -65,14 +65,14 @@ export default function CallHistoryItem({ call, onCall, onVideo, onMessage }) {
   const isMissed = call.status === "missed" || call.status === "rejected" || call.status === "busy" || call.status === "unavailable";
 
   return (
-    <div className="group flex items-center justify-between p-4 bg-white border border-gray-50 rounded-[20px] hover:shadow-md hover:border-pink-100 transition-all cursor-default">
+    <div className="group flex items-center justify-between p-3 md:p-4 bg-white border border-gray-50 rounded-[20px] hover:shadow-md hover:border-pink-100 transition-all cursor-default">
       {/* Left side info */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4">
         <div className="relative">
           <img 
             src={avatarUrl} 
             alt={contact.fullName} 
-            className="w-12 h-12 rounded-full object-cover border-2 border-gray-50 group-hover:border-pink-200 transition-colors" 
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-gray-50 group-hover:border-pink-200 transition-colors" 
           />
           {/* Call type icon */}
           <div className={`absolute -bottom-1 -right-1 p-1 rounded-full bg-white shadow-sm border border-gray-100 ${color}`}>
@@ -109,21 +109,21 @@ export default function CallHistoryItem({ call, onCall, onVideo, onMessage }) {
       <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all translate-x-2 md:group-hover:translate-x-0">
         <button 
           onClick={() => onMessage(call)}
-          className="p-2.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-colors" 
+          className="p-2 md:p-2.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-colors" 
           title="Message"
         >
           <MessageCircle size={18} />
         </button>
         <button 
           onClick={() => onCall(call)}
-          className="p-2.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-colors"
+          className="p-2 md:p-2.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-colors"
           title="Voice Call"
         >
           <Phone size={18} />
         </button>
         <button 
           onClick={() => onVideo(call)}
-          className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+          className="p-2 md:p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
           title="Video Call"
         >
           <Video size={18} />
