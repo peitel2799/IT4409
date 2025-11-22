@@ -230,6 +230,36 @@ io.on("connection", (socket) => {
     emitToUser(receiverId, "user:stop-typing", { senderId: userId });
   });
 
+  // ==================== GROUP EVENTS ====================
+
+  // Join group room (for real-time updates)
+  socket.on("group:join", ({ groupId }) => {
+    socket.join(`group:${groupId}`);
+    console.log(`User ${socket.user.fullName} joined group room: ${groupId}`);
+  });
+
+  // Leave group room
+  socket.on("group:leave", ({ groupId }) => {
+    socket.leave(`group:${groupId}`);
+    console.log(`User ${socket.user.fullName} left group room: ${groupId}`);
+  });
+
+  // Group typing indicator
+  socket.on("group:typing", ({ groupId }) => {
+    socket.to(`group:${groupId}`).emit("group:typing", {
+      groupId,
+      senderId: userId,
+      senderName: socket.user.fullName,
+    });
+  });
+
+  socket.on("group:stop-typing", ({ groupId }) => {
+    socket.to(`group:${groupId}`).emit("group:stop-typing", {
+      groupId,
+      senderId: userId,
+    });
+  });
+
   socket.on("disconnect", async () => {
     console.log("A user disconnected", socket.user.fullName);
 
