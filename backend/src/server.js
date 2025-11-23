@@ -22,18 +22,10 @@ app.use("/api/messages", messageRoutes);
 
 // make ready for deployment
 if (ENV.NODE_ENV === "production") {
-  const buildPath = path.join(__dirname, "../frontend/dist");
-  const indexHtmlPath = path.join(buildPath, "index.html");
-
-  app.use(express.static(buildPath));
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
   app.get("*", (_, res) => {
-    res.sendFile(indexHtmlPath, (err) => {
-      if (err) {
-        console.error("Error sending index.html:", err);
-        res.status(404).send("index.html not found");
-      }
-    });
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
   });
 }
 

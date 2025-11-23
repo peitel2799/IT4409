@@ -24,7 +24,8 @@ export const ChatProvider = ({ children }) => {
   // Initialize socket connection
   useEffect(() => {
     if (authUser) {
-      const newSocket = io("http://localhost:3000", {
+      const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
+      const newSocket = io(BASE_URL, {
         withCredentials: true,
       });
 
