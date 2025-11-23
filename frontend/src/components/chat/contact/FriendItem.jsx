@@ -1,7 +1,7 @@
 import { useChat } from "../../../context/ChatContext";
 
-export default function FriendItem({ contact }) {
-  const { chats, onChatSelect } = useChat();
+export default function FriendItem({ contact, onChatSelect }) {
+  const { chats } = useChat();
 
   const handleMessageClick = () => {
     const contactId = contact._id || contact.id;

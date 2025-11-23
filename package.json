@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/peitel2799/IT4409/issues"
   },
-  "homepage": "https://github.com/peitel2799/IT4409#readme"
+  "homepage": "https://github.com/peitel2799/IT4409#readme",
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  }
 }

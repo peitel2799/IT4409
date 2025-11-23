@@ -25,9 +25,6 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (authUser) {
       const newSocket = io("http://localhost:3000", {
-        query: {
-          userId: authUser._id,
-        },
         withCredentials: true,
       });
 
