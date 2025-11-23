@@ -15,8 +15,6 @@
     "@arcjet/node": "^1.0.0-beta.15",
     "@arcjet/inspect": "^1.0.0-beta.15",
     "bcryptjs": "^2.4.3",
-    "btl_web": "file:..",
-    "chat-realtime": "file:..",
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
