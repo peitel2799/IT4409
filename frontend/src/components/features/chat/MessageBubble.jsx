@@ -28,8 +28,8 @@ export default function MessageBubble({ message, isMe, avatar }) {
           {message.text}
         </div>
         
-        <span className={`text-[10px] text-gray-400 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity select-none`}>
-            {message.displayTime}
+        <span className="text-[10px] text-gray-400 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {message.displayTime} {isMe && message.isRead && "Seen" } {isMe && !message.isRead && "Sent" }
         </span>
       </div>
     </div>

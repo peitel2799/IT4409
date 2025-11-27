@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Outlet, useLocation, useNavigate, NavLink } from "react-router-dom"; 
 import { useChat } from "../../../context/ChatContext";
 import { Users, UserCheck, Clock, SendToBack } from "lucide-react"; 
@@ -17,10 +17,7 @@ export default function FriendsDashboard() {
   const [viewMode, setViewMode] = useState("grid");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // New state for mobile sidebar toggle
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Menu items for mobile nav logic
+  // Menu items cho mobile nav
   const menuItems = [
     { path: "all", label: "All Friends", icon: Users },         
     { path: "online", label: "Online", icon: UserCheck },
@@ -44,23 +41,10 @@ export default function FriendsDashboard() {
 
   return (
     <div className="flex h-full w-full bg-[#FAFAFA] overflow-hidden relative">
-      
-      {/* MOBILE OVERLAY: Click to close sidebar */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
 
-      {/* LEFT SIDEBAR: Added transition classes for mobile */}
-      <div className={`
-        fixed md:relative inset-y-0 left-0 z-[70] md:z-auto
-        w-64 h-full bg-white border-r border-gray-100 transition-transform duration-300 ease-in-out
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-      `}>
-        {/* Pass close function to sidebar if needed when clicking items */}
-        <FriendsSidebar onMenuClick={() => setIsSidebarOpen(false)} />
+      {/* LEFT SIDEBAR: luôn hiển thị */}
+      <div className="w-64 h-full bg-white border-r border-gray-100 hidden md:block">
+        <FriendsSidebar />
       </div>
 
       {/* MAIN CONTENT AREA */}
@@ -73,17 +57,16 @@ export default function FriendsDashboard() {
           setViewMode={setViewMode}
           showSearch={true}
           showToggle={true}
-          onOpenMenu={() => setIsSidebarOpen(true)} // Pass trigger to header
         />
 
-        {/* MOBILE NAV*/}
+        {/* MOBILE NAV: hiển thị ngang */}
         <div className="md:hidden flex overflow-x-auto bg-white border-b border-gray-100 px-4 py-2 gap-2 no-scrollbar">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) => `
-                flex items-center gap-2 px-4 py-2 rounded-full transition-all font-medium text-xs whitespace-nowrap
+                flex items-center gap-2 px-4 py-2 rounded-full transition-colors font-medium text-xs whitespace-nowrap
                 ${isActive ? "bg-pink-500 text-white shadow-sm" : "bg-gray-100 text-gray-500"}
               `}
             >
@@ -95,10 +78,7 @@ export default function FriendsDashboard() {
 
         <div className="flex-1 overflow-hidden p-4 md:p-6 relative">
           <Outlet context={{ searchQuery, viewMode, onStartChat: handleStartChat }} />
-
-          <div>
-            <AddFriendButton />
-          </div>
+          <AddFriendButton />
         </div>
       </div>
 

@@ -11,14 +11,6 @@ export default function FriendsSidebar({ onMenuClick }) {
 
   return (
     <div className="flex flex-col h-full bg-white overflow-y-auto relative">
-      {/* Nút đóng Sidebar - Chỉ hiện trên Mobile */}
-      <button 
-        onClick={onMenuClick}
-        className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 rounded-full md:hidden transition-colors"
-      >
-        <X size={20} />
-      </button>
-
       {/* Header Sidebar */}
       <div className="py-8 px-6 border-b border-gray-50 md:border-none">
         <h1 className="text-2xl font-bold text-gray-900">Friends</h1>
@@ -31,7 +23,6 @@ export default function FriendsSidebar({ onMenuClick }) {
           <NavLink
             key={item.path}
             to={item.path}
-            onClick={onMenuClick} // Đóng sidebar khi nhấn vào mục trên mobile
             className={({ isActive }) => `
               flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-xl transition-all font-medium text-sm
               ${isActive 
