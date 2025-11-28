@@ -31,7 +31,7 @@ export default function ChatInput({ chat }) {
     setLoading(true);
 
     if (receiverId && !chat?.isSelfChat) {
-    stopTyping(receiverId);
+      stopTyping(receiverId);
     }
 
     try {

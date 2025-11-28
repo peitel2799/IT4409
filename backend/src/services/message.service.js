@@ -1,6 +1,6 @@
+import Group from "../models/Group.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
-import Group from "../models/Group.js";
 import { AppError } from "./AppError.js";
 
 /**
@@ -32,9 +32,9 @@ export const getMessagesByUserIdService = async (myId, userToChatId) => {
  * Send a message via REST API (with image upload)
  * Note: Self-messages are allowed for "My Cloud" feature (personal notes/files)
  */
-export const sendMessageService = async (senderId, receiverId, text, imageUrl) => {
-    if (!text && !imageUrl) {
-        throw new AppError("Text or image is required", 400);
+export const sendMessageService = async (senderId, receiverId, text, imageUrl, audioUrl) => {
+    if (!text && !imageUrl && !audioUrl) {
+        throw new AppError("Text, image or audio is required", 400);
     }
 
     const receiverExists = await User.exists({ _id: receiverId });
@@ -47,6 +47,7 @@ export const sendMessageService = async (senderId, receiverId, text, imageUrl) =
         receiverId,
         text,
         image: imageUrl,
+        audio: audioUrl,
     });
     await newMessage.save();
     return newMessage;
@@ -272,9 +273,9 @@ export const getGroupMessagesService = async (groupId, userId) => {
 /**
  * Send a message to a group
  */
-export const sendGroupMessageService = async (senderId, groupId, text, imageUrl) => {
-    if (!text && !imageUrl) {
-        throw new AppError("Text or image is required", 400);
+export const sendGroupMessageService = async (senderId, groupId, text, imageUrl, audioUrl) => {
+    if (!text && !imageUrl && !audioUrl) {
+        throw new AppError("Text, image or audio is required", 400);
     }
 
     // Verify user is a member of the group
@@ -288,6 +289,7 @@ export const sendGroupMessageService = async (senderId, groupId, text, imageUrl)
         groupId,
         text,
         image: imageUrl,
+        audio: audioUrl,
     });
 
     await newMessage.save();
@@ -339,7 +341,7 @@ export const deleteGroupConversationService = async (groupId, userId) => {
         throw new AppError("Group not found", 404);
     }
 
-    
+
     //Xóa tất cả tin nhắn có groupId 
     const result = await Message.deleteMany({ groupId: groupId });
 

@@ -28,6 +28,9 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    audio: {
+      type: String, // URL to the audio file
+    },
     isRead: {
       type: Boolean,
       default: false,

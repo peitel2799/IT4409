@@ -3,15 +3,15 @@ import { getReceiverSocketIds, io } from "../lib/socket.js";
 import {
   getAllContactsService,
   getChatPartnersService,
+  getGroupMessagesService,
   getMessagesByUserIdService,
   markMessagesAsReadService,
   markSingleMessageAsReadService,
   reactToMessageService,
   searchAllMessagesService,
   searchMessagesService,
-  sendMessageService,
-  getGroupMessagesService,
   sendGroupMessageService,
+  sendMessageService,
 } from "../services/message.service.js";
 
 // Helper to emit to all sockets of a user
@@ -52,11 +52,19 @@ export const sendMessage = async (req, res) => {
     const senderId = req.user._id;
 
     let imageUrl = null;
-    if (req.file) {
-      imageUrl = await uploadOnCloudinary(req.file.path);
+    let audioUrl = null;
+
+    // Handle files from upload.fields
+    if (req.files) {
+      if (req.files.image && req.files.image[0]) {
+        imageUrl = await uploadOnCloudinary(req.files.image[0].path);
+      }
+      if (req.files.audio && req.files.audio[0]) {
+        audioUrl = await uploadOnCloudinary(req.files.audio[0].path, { resource_type: "video" }); // Cloudinary treats audio as video resource_type often, or "auto"
+      }
     }
 
-    const newMessage = await sendMessageService(senderId, receiverId, text, imageUrl);
+    const newMessage = await sendMessageService(senderId, receiverId, text, imageUrl, audioUrl);
 
     // Emit socket event to all receiver sockets
     emitToUser(receiverId, "newMessage", newMessage);
@@ -203,11 +211,18 @@ export const sendGroupMessage = async (req, res) => {
     const senderId = req.user._id;
 
     let imageUrl = null;
-    if (req.file) {
-      imageUrl = await uploadOnCloudinary(req.file.path);
+    let audioUrl = null;
+
+    if (req.files) {
+      if (req.files.image && req.files.image[0]) {
+        imageUrl = await uploadOnCloudinary(req.files.image[0].path);
+      }
+      if (req.files.audio && req.files.audio[0]) {
+        audioUrl = await uploadOnCloudinary(req.files.audio[0].path, { resource_type: "video" });
+      }
     }
 
-    const { message, group } = await sendGroupMessageService(senderId, groupId, text, imageUrl);
+    const { message, group } = await sendGroupMessageService(senderId, groupId, text, imageUrl, audioUrl);
 
     // Emit socket event to all group members (except sender)
     group.members.forEach((memberId) => {

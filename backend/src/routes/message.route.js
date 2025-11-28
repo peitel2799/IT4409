@@ -2,15 +2,15 @@ import express from "express";
 import {
   getAllContacts,
   getChatPartners,
+  getGroupMessages,
   getMessagesByUserId,
   markAsRead,
   markMessageAsRead,
   reactToMessage,
   searchAllMessages,
   searchMessages,
-  sendMessage,
-  getGroupMessages,
   sendGroupMessage,
+  sendMessage,
 } from "../controllers/message.controller.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -28,7 +28,7 @@ router.get("/search", searchAllMessages);
 router.get("/search/:partnerId", searchMessages);
 
 router.get("/:id", getMessagesByUserId);
-router.post("/send/:id", upload.single('image'), sendMessage);
+router.post("/send/:id", upload.fields([{ name: 'image', maxCount: 1 }, { name: 'audio', maxCount: 1 }]), sendMessage);
 
 // Mark all messages from a partner as read
 router.post("/read/:partnerId", markAsRead);
@@ -41,6 +41,6 @@ router.put("/:messageId/react", reactToMessage);
 
 // Group message routes
 router.get("/group/:groupId", getGroupMessages);
-router.post("/group/:groupId/send", upload.single('image'), sendGroupMessage);
+router.post("/group/:groupId/send", upload.fields([{ name: 'image', maxCount: 1 }, { name: 'audio', maxCount: 1 }]), sendGroupMessage);
 
 export default router;
