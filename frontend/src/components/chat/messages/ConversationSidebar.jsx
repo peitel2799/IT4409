@@ -1,4 +1,4 @@
-import { LoaderCircleIcon, Search } from "lucide-react";
+import { LoaderCircleIcon, Search, UserPlus } from "lucide-react";
 import ConversationListItem from "./ConversationListItem";
 import { useState, useEffect } from "react";
 import { useChat } from "../../../context/ChatContext";
@@ -44,6 +44,12 @@ export default function ConversationSidebar({ selectedChat, onChatSelect }) {
             className="flex-1 ml-2 bg-transparent text-sm focus:outline-none"
           />
         </div>
+        <div className="flex items-center justify-around mt-3">
+          <button className="flex items-center text-sm text-gray-600 hover:text-[#6C63FF]">
+            <UserPlus className="w-5 h-5 mr-1" />
+            Add friends
+          </button>
+        </div>
       </div>
 
       <div className="flex p-3 border-b border-gray-200">
@@ -71,11 +77,13 @@ export default function ConversationSidebar({ selectedChat, onChatSelect }) {
 
       {/* Danh sách chat (Đã dùng filteredChats từ context) */}
       <div className="flex-1 overflow-y-auto">
-        {filteredChats.map((chat) => (
+        {filteredChats.map((chat, idx) => (
           <ConversationListItem
-            key={chat.id}
+            key={chat.id || chat._id || idx}
             chat={chat}
-            isActive={selectedChat?.id === chat.id}
+            isActive={
+              selectedChat?.id === chat.id || selectedChat?._id === chat._id
+            }
             onClick={() => onChatSelect(chat)}
           />
         ))}

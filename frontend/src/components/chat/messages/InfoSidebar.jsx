@@ -1,4 +1,4 @@
-import {X,Search} from "lucide-react";
+import { X, Search } from "lucide-react";
 
 const ActionButton = ({ icon: Icon, text }) => (
   <button className="flex flex-col items-center text-gray-600 hover:text-[#6C63FF] w-20">
@@ -8,6 +8,8 @@ const ActionButton = ({ icon: Icon, text }) => (
 );
 
 export default function InfoSidebar({ chat, onClose }) {
+  if (!chat) return null;
+
   return (
     <div className="flex flex-col w-80 bg-white border-l border-gray-200 shadow-sm">
       {/* Header */}
@@ -22,7 +24,7 @@ export default function InfoSidebar({ chat, onClose }) {
         {/* Thông tin Profile */}
         <div className="flex flex-col items-center p-4 border-b border-gray-200">
           <img
-            src={chat.avatar}
+            src={chat.avatar || "https://ui-avatars.com/api/?name=User&background=random"}
             alt={chat.name}
             className="w-20 h-20 rounded-full mb-3"
           />
@@ -38,11 +40,11 @@ export default function InfoSidebar({ chat, onClose }) {
               placeholder="Search message"
               className="flex-1 ml-2 bg-transparent text-sm focus:outline-none"
             />
-            <button><Search></Search></button>
+            <button><Search className="w-4 h-4" /></button>
           </div>
         </div>
 
-        </div>
+      </div>
     </div>
   );
 }

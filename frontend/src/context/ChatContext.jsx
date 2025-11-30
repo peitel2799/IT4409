@@ -37,6 +37,7 @@ export const ChatProvider = ({ children }) => {
         import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
       const newSocket = io(BASE_URL, {
         withCredentials: true,
+        transports: ['websocket', 'polling'],
       });
 
       newSocket.on("getOnlineUsers", (userIds) => {
@@ -48,6 +49,10 @@ export const ChatProvider = ({ children }) => {
         if (isSoundEnabled) {
           // Play notification sound if enabled
         }
+      });
+
+      newSocket.on("messageSent", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
       });
 
       newSocket.on("messagesRead", (data) => {
@@ -65,7 +70,13 @@ export const ChatProvider = ({ children }) => {
 
       return () => {
         newSocket.disconnect();
+        setSocket(null);
       };
+    } else {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
     }
   }, [authUser, isSoundEnabled]);
 

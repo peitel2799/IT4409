@@ -70,18 +70,26 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  console.log("Login attempt with body:", req.body);
 
   if (!email || !password) {
+    console.log("Login failed: Missing email or password");
     return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) {
+      console.log(`Login failed: User not found for email ${email}`);
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
     // never tell the client which one is incorrect: password or email
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isPasswordCorrect) {
+      console.log(`Login failed: Incorrect password for email ${email}`);
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     generateToken(user._id, res);
 

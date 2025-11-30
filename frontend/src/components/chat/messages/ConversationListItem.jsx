@@ -1,14 +1,13 @@
 export default function ConversationListItem({ chat, isActive, onClick }) {
   return (
     <div
-      className={`flex items-center p-3 cursor-pointer transition-colors ${
-        isActive ? "bg-[#FCE4EC]" : "hover:bg-gray-100" 
-      }`}
+      className={`flex items-center p-3 cursor-pointer transition-colors ${isActive ? "bg-[#FCE4EC]" : "hover:bg-gray-100"
+        }`}
       onClick={onClick}
     >
       {/* Avatar */}
       <img
-        src={chat.avatar}
+        src={chat.avatar || "https://ui-avatars.com/api/?name=User&background=random"}
         alt={chat.name}
         className="w-12 h-12 rounded-full mr-3"
       />

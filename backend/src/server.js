@@ -15,7 +15,16 @@ const __dirname = path.resolve();
 const PORT = ENV.PORT || 5173;
 
 app.use(express.json({ limit: "5mb" })); // req.body
-app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || origin === ENV.CLIENT_URL || origin.startsWith("http://localhost:")) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
@@ -33,5 +42,6 @@ if (ENV.NODE_ENV === "production") {
 
 server.listen(PORT, () => {
   console.log("Server running on port: " + PORT);
+  console.log("CORS Origin: " + ENV.CLIENT_URL);
   connectDB();
 });
