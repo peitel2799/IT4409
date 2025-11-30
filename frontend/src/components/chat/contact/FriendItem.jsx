@@ -9,6 +9,7 @@ export default function FriendItem({ contact, onChatSelect }) {
     const existingChat = chats.find(chat => chat.id === contactId);
 
     const chatToSelect = existingChat || {
+      _id: contactId,
       id: contactId,
       name: contact.fullName,
       avatar: contact.avatar || `https://ui-avatars.com/api/?name=${contact.fullName}&background=random`,

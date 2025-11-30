@@ -1,4 +1,6 @@
 export default function MessageBubble({ message, isMe, avatar }) {
+  if (!message) return null;
+
   if (message.isSystem) {
     return (
       <div className="text-center text-sm text-gray-500 my-2">
@@ -10,29 +12,32 @@ export default function MessageBubble({ message, isMe, avatar }) {
   if (message.isAction) {
     return (
       <div className="flex justify-end">
-        <button className="text-sm text-[#6C63FF] font-semibold hover:underline"> 
+        <button className="text-sm text-[#6C63FF] font-semibold hover:underline">
           {message.text}
         </button>
       </div>
     );
   }
 
+  const avatarSrc = avatar && avatar.trim() !== ""
+    ? avatar
+    : "https://ui-avatars.com/api/?name=User&background=random";
+
   return (
     <div className={`flex items-end ${isMe ? "justify-end" : "justify-start"}`}>
       {!isMe && (
         <img
-          src={avatar}
+          src={avatarSrc}
           alt="Avatar"
           className="w-8 h-8 rounded-full mr-2"
         />
       )}
 
       <div
-        className={`relative max-w-xs md:max-w-md px-3 py-2 rounded-2xl mb-1 ${
-          isMe
-            ? "bg-pink-400 text-gray-900" 
-            : "bg-[#FCE4EC] text-gray-900" 
-        }`}
+        className={`relative max-w-xs md:max-w-md px-3 py-2 rounded-2xl mb-1 ${isMe
+            ? "bg-pink-400 text-gray-900"
+            : "bg-[#FCE4EC] text-gray-900"
+          }`}
       >
         <p>{message.text}</p>
         <div className="flex items-center justify-between gap-2 mt-1">
