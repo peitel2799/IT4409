@@ -1,108 +1,61 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { ChatProvider } from "../context/ChatContext"; // Import file bạn vừa tạo
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import { LoaderIcon } from "lucide-react";
+import NavigationSidebar from "../components/features/NavigationSidebar";
 
-import NavigationSidebar from "../components/chat/NavigationSidebar";
-import ConversationSidebar from "../components/chat/messages/ConversationSidebar";
-import ChatArea from "../components/chat/messages/ChatArea";
-import InfoSidebar from "../components/chat/messages/InfoSidebar";
-import FriendsList from "../components/chat/contact/FriendsList"; 
+// Tạo component nội dung để tách biệt với Provider
+const ChatPageContent = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-import SettingsSidebar from "../components/chat/settings/SettingsSidebar";
-import SettingsDetail from "../components/chat//SettingsDetail";
+  // 1. Highlight Sidebar dựa trên URL
+  const currentPath = location.pathname.split("/").pop();
+  const activePanel = currentPath === "messages" ? "chats" : currentPath;
+
+  // 2. Chuyển hướng URL khi bấm Sidebar
+  const handlePanelChange = (panel) => {
+    const routeMap = {
+      home: "home",
+      chats: "messages",
+      friends: "friends",
+      calls: "calls",
+      settings: "settings",
+    };
+    navigate(`/chat/${routeMap[panel] || "home"}`);
+  };
+
+  return (
+    <div className="h-screen w-full bg-[#F2F0E9] flex items-center justify-start p-2 pr-2 font-sans">
+      <div className="w-full h-full flex gap-3 overflow-hidden">
+        <NavigationSidebar activePanel={activePanel} onPanelChange={handlePanelChange} />
+        
+        <div className="flex-1 h-full min-w-0 bg-white rounded-3xl shadow-xl overflow-hidden relative">
+          {/* Không cần truyền props gì cả, các con tự lấy từ Context */}
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function ChatPage() {
   const { authUser, isCheckingAuth } = useAuth();
   const navigate = useNavigate();
 
-  const [selectedChat, setSelectedChat] = useState(null); 
-  const [isInfoSidebarOpen, setIsInfoSidebarOpen] = useState(true);
-
-  // 'chats', 'friends', 'settings'
-  const [activePanel, setActivePanel] = useState("chats");
-
-  // ... (useEffect và check loading/auth ) ...
   useEffect(() => {
-    if (!isCheckingAuth && !authUser) {
-      navigate("/login", { replace: true });
-    }
+    if (!isCheckingAuth && !authUser) navigate("/login", { replace: true });
   }, [authUser, isCheckingAuth, navigate]);
 
-  if (isCheckingAuth) { /* ... loading ... */ }
-  if (!authUser) { /* ... chuyển hướng ... */ }
+  if (isCheckingAuth || !authUser) {
+    return <div className="h-screen flex justify-center items-center"><LoaderIcon className="animate-spin" /></div>;
+  }
 
-  const handleSelectChatFromFriends = (chat) => {
-    setSelectedChat(chat);
-    setActivePanel("chats"); 
-  };
-
-  //render các cột sidebar
-  const renderPanel = () => {
-    switch (activePanel) {
-      case "friends":
-        return (
-          <FriendsList 
-            onChatSelect={handleSelectChatFromFriends}
-          />
-        );
-      case "settings":
-        return (
-          <SettingsSidebar/>
-        );
-      case "chats":
-      default:
-        return (
-          <ConversationSidebar
-            selectedChat={selectedChat}
-            onChatSelect={setSelectedChat}
-          />
-        );
-    }
-  };
-
-  // render phần chính  nội dung chat 
-  const renderMain = () => {
-    if (activePanel === "settings") {
-      return <SettingsDetail />;
-    }
-    // Khi ở 'chats' hoặc 'friends', vẫn hiển thị ChatArea
-    return (
-      <ChatArea
-        chat={selectedChat}
-        onToggleInfoSidebar={() => setIsInfoSidebarOpen(!isInfoSidebarOpen)}
-        isInfoSidebarOpen={isInfoSidebarOpen}
-      />
-    );
-  };
-  
-  // reder phần thông tin 
-  const renderInfo = () => {
-    // Ẩn InfoSidebar khi đang ở màn hình Settings
-    if (activePanel === "settings") {
-      return null;
-    }
-    
-    return isInfoSidebarOpen && selectedChat && (
-      <InfoSidebar 
-        chat={selectedChat} 
-        onClose={() => setIsInfoSidebarOpen(false)}
-      />
-    );
-  };
-
+  // Bọc Provider ở ngoài cùng
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-100">
-      
-      <NavigationSidebar 
-        activePanel={activePanel}
-        onPanelChange={setActivePanel}
-      />
-      
-      {/* GỌI CÁC HÀM RENDER */}
-      {renderPanel()}
-      {renderMain()}
-      {renderInfo()}
-      
-    </div>
+    <ChatProvider>
+      <ChatPageContent />
+    </ChatProvider>
   );
 }
