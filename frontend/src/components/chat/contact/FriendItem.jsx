@@ -12,7 +12,7 @@ export default function FriendItem({ contact, onChatSelect }) {
       _id: contactId,
       id: contactId,
       name: contact.fullName,
-      avatar: contact.avatar || `https://ui-avatars.com/api/?name=${contact.fullName}&background=random`,
+      avatar: contact.profilePic || `https://ui-avatars.com/api/?name=${contact.fullName}&background=random`,
       email: contact.email,
     };
 
@@ -23,7 +23,7 @@ export default function FriendItem({ contact, onChatSelect }) {
     <div className="flex items-center p-3 hover:bg-gray-50 rounded-lg">
       <img
         src={
-          contact.avatar ||
+          contact.profilePic ||
           `https://ui-avatars.com/api/?name=${contact.fullName}&background=random`
         }
         alt={contact.fullName}

@@ -4,18 +4,10 @@ import { useState, useEffect } from "react";
 import { useChat } from "../../../context/ChatContext";
 import { LoaderIcon } from "lucide-react";
 
-export default function ConversationSidebar({
-  selectedChat,
-  onChatSelect,
-}) {
+export default function ConversationSidebar({ selectedChat, onChatSelect }) {
   const [filter, setFilter] = useState("all");
 
-  const {
-    chats,
-    getMyChatPartners,
-    isUsersLoading
-  } = useChat();
-
+  const { chats, getMyChatPartners, isUsersLoading } = useChat();
 
   useEffect(() => {
     getMyChatPartners();
@@ -63,24 +55,25 @@ export default function ConversationSidebar({
       <div className="flex p-3 border-b border-gray-200">
         <button
           onClick={() => setFilter("all")}
-          className={`px-3 py-1 text-sm rounded-full ${filter === "all"
+          className={`px-3 py-1 text-sm rounded-full ${
+            filter === "all"
               ? "bg-[#FCE4EC] text-black font-semibold"
               : "text-gray-600"
-            }`}
+          }`}
         >
           All
         </button>
         <button
           onClick={() => setFilter("unread")}
-          className={`ml-2 px-3 py-1 text-sm rounded-full ${filter === "unread"
+          className={`ml-2 px-3 py-1 text-sm rounded-full ${
+            filter === "unread"
               ? "bg-[#FCE4EC] text-black font-semibold"
               : "text-gray-600"
-            }`}
+          }`}
         >
           Unread
         </button>
       </div>
-
 
       {/* Danh sách chat (Đã dùng filteredChats từ context) */}
       <div className="flex-1 overflow-y-auto">
@@ -88,7 +81,9 @@ export default function ConversationSidebar({
           <ConversationListItem
             key={chat.id || chat._id || idx}
             chat={chat}
-            isActive={selectedChat?.id === chat.id || selectedChat?._id === chat._id}
+            isActive={
+              selectedChat?.id === chat.id || selectedChat?._id === chat._id
+            }
             onClick={() => onChatSelect(chat)}
           />
         ))}
