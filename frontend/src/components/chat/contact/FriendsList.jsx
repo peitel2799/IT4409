@@ -4,7 +4,7 @@ import { useChat } from "../../../context/ChatContext";
 import FriendItem from "./FriendItem";
 import AddFriendsModal from "../../AddFriendsModal";
 
-export default function FriendsList() {
+export default function FriendsList({ onChatSelect }) {
   const {
     friends,
     friendRequests,
@@ -67,21 +67,19 @@ export default function FriendsList() {
       <div className="flex border-b">
         <button
           onClick={() => setActiveTab("friends")}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === "friends"
-              ? "border-b-2 border-pink-500 text-pink-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === "friends"
+            ? "border-b-2 border-pink-500 text-pink-500"
+            : "text-gray-500 hover:text-gray-700"
+            }`}
         >
           Friends ({friends.length})
         </button>
         <button
           onClick={() => setActiveTab("requests")}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors relative ${
-            activeTab === "requests"
-              ? "border-b-2 border-pink-500 text-pink-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "requests"
+            ? "border-b-2 border-pink-500 text-pink-500"
+            : "text-gray-500 hover:text-gray-700"
+            }`}
         >
           Requests
           {friendRequests.length > 0 && (
@@ -129,10 +127,7 @@ export default function FriendsList() {
                   <FriendItem
                     key={friend._id || friend.id}
                     contact={friend}
-                    onChatSelect={(chat) => {
-                      // Handle chat selection if needed
-                      console.log("Selected chat:", chat);
-                    }}
+                    onChatSelect={onChatSelect}
                   />
                 ))}
               </div>
