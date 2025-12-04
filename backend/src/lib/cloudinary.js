@@ -9,12 +9,12 @@ cloudinary.config({
 });
 
 
-export const uploadOnCloudinary = async (file) => {
+export const uploadOnCloudinary = async (file, options = {}) => {
     try {
-        if(!file) return null;
+        if (!file) return null;
 
         console.log('Uploading file:', file);
-        const result = await cloudinary.uploader.upload(file);
+        const result = await cloudinary.uploader.upload(file, options);
         console.log('Upload result:', result.secure_url);
 
         if (fs.existsSync(file)) {

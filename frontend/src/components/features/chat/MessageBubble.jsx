@@ -77,6 +77,16 @@ export default function MessageBubble({ message, isMe, avatar, isLastInGroup }) 
               onClick={() => window.open(message.image, '_blank')}
             />
           )}
+          {message.audio && (
+            <div className={`flex items-center gap-2 min-w-[200px] ${isMe ? "text-white" : "text-gray-800"}`}>
+              <audio
+                controls
+                src={message.audio}
+                className="w-full h-8"
+              // Custom styling for audio element can be tricky, native controls are safe for MVP
+              />
+            </div>
+          )}
           {message.text}
         </div>
 
