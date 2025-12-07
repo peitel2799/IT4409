@@ -1,4 +1,4 @@
-import { AutoScrollList } from "./HomeItems"; // Import từ file cùng cấp
+import { AutoScrollList } from "./HomeItems"; 
 
 export default function SectionCard({ 
   title, subtitle, icon: Icon, image, 

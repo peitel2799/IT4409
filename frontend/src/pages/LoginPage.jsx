@@ -66,10 +66,15 @@ function LoginPage() {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D3D0FB]"
                   placeholder="Enter your password"
                   required
                 />
+              </div>
+              <div className="text-right mt-1">
+                <Link to="/forgot-password" className="text-sm text-purple-500 hover:underline">
+                  Forgot password?
+                </Link>
               </div>
             </div>
 

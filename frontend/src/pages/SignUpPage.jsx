@@ -110,7 +110,7 @@ function SignUpPage() {
                     setFormData({ ...formData, email: e.target.value });
                     setErrors({ ...errors, email: "" });
                   }}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 ${
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D3D0FB] ${
                     errors.email ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="johndoe@gmail.com"

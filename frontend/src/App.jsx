@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import ChatPage from "./pages/ChatPage";
 import CallPage from "./pages/CallPage";
+import ForgotPasswordPage from "./pages/ForgetPasswordPage";
 import HomeDashboard from "./components/features/home/HomeDashboard";
 import CallsDashboard from "./components/features/calls/CallsDashboard";
 import FriendsDashboard from "./components/features/friends/FriendsDashboard";
@@ -34,7 +35,10 @@ function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/chat" />} />
           <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/chat" />} />
+          <Route path="/forgot-password" element={!authUser ? <ForgotPasswordPage /> : <Navigate to="/chat" />} />
         </Route>
+
+        
 
         <Route 
           path="/call-window" 
