@@ -13,10 +13,11 @@ import { io } from "socket.io-client";
 const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
+  // --- STATE ---
   const [allContacts, setAllContacts] = useState([]);
-  const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [activeTab, setActiveTab] = useState("chats");
+
+  // State UI
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
@@ -27,6 +28,7 @@ export const ChatProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]); // NEW: Sent friend requests
   const [isFriendActionLoading, setIsFriendActionLoading] = useState(false);
   const { authUser } = useAuth();
 
@@ -86,35 +88,18 @@ export const ChatProvider = ({ children }) => {
     setIsSoundEnabled(newSoundState);
   }, [isSoundEnabled]);
 
-  const customSetActiveTab = (tab) => setActiveTab(tab);
   const customSetSelectedUser = (user) => setSelectedUser(user);
 
   const getAllContacts = useCallback(async () => {
     setIsUsersLoading(true);
-    setAllContacts([]);
     try {
       const res = await axiosInstance.get("/messages/contacts");
       setAllContacts(res.data);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to load contacts"
-      );
-    } finally {
-      setIsUsersLoading(false);
-    }
-  }, []);
-
-  const getMyChatPartners = useCallback(async () => {
-    setIsUsersLoading(true);
-    setChats([]);
-    try {
-      const res = await axiosInstance.get("/messages/chats");
-      setChats(res.data);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || error.message || "Failed to load chats"
+        error.message ||
+        "Failed to load contacts"
       );
     } finally {
       setIsUsersLoading(false);
@@ -140,8 +125,8 @@ export const ChatProvider = ({ children }) => {
       } catch (error) {
         toast.error(
           error.response?.data?.message ||
-            error.message ||
-            "Failed to load messages"
+          error.message ||
+          "Failed to load messages"
         );
       } finally {
         setIsMessagesLoading(false);
@@ -194,6 +179,19 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
+  // NEW: Get sent friend requests
+  const getSentRequests = useCallback(async () => {
+    try {
+      const res = await axiosInstance.get("/friends/requests/sent");
+      setSentRequests(res.data);
+    } catch (error) {
+      console.error("Failed to load sent requests", error);
+      toast.error(
+        error.response?.data?.message || "Failed to load sent requests"
+      );
+    }
+  }, []);
+
   const getFriends = useCallback(async () => {
     try {
       const res = await axiosInstance.get("/friends/list");
@@ -201,8 +199,8 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to load friends"
+        error.message ||
+        "Failed to load friends"
       );
     }
   }, []);
@@ -212,8 +210,9 @@ export const ChatProvider = ({ children }) => {
     if (authUser) {
       getFriends();
       getFriendRequests();
+      getSentRequests(); // NEW: Load sent requests
     }
-  }, [authUser, getFriends, getFriendRequests]);
+  }, [authUser, getFriends, getFriendRequests, getSentRequests]);
 
   // Setup friend request socket listeners
   useEffect(() => {
@@ -246,7 +245,7 @@ export const ChatProvider = ({ children }) => {
         setIsFriendActionLoading(true);
         const res = await axiosInstance.post(`/friends/request/${userId}`);
         toast.success("Friend request sent successfully");
-        await Promise.all([getFriendRequests(), getFriends()]);
+        await Promise.all([getFriendRequests(), getFriends(), getSentRequests()]); // NEW: Refresh sent requests
       } catch (error) {
         toast.error(
           error.response?.data?.message || "Failed to send friend request"
@@ -256,7 +255,7 @@ export const ChatProvider = ({ children }) => {
         setIsFriendActionLoading(false);
       }
     },
-    [getFriendRequests, getFriends]
+    [getFriendRequests, getFriends, getSentRequests]
   );
 
   const acceptFriendRequest = useCallback(
@@ -296,13 +295,14 @@ export const ChatProvider = ({ children }) => {
     },
     [getFriendRequests]
   );
+
   const cancelFriendRequest = useCallback(
     async (userId) => {
       try {
         setIsFriendActionLoading(true);
         const res = await axiosInstance.post(`/friends/cancel/${userId}`);
         toast.success("Friend request cancelled successfully");
-        await getFriendRequests();
+        await Promise.all([getFriendRequests(), getSentRequests()]); // NEW: Refresh sent requests
       } catch (error) {
         toast.error(
           error.response?.data?.message || "Failed to cancel friend request"
@@ -312,8 +312,9 @@ export const ChatProvider = ({ children }) => {
         setIsFriendActionLoading(false);
       }
     },
-    [getFriendRequests]
+    [getFriendRequests, getSentRequests]
   );
+
   const removeFriend = useCallback(
     async (userId) => {
       try {
@@ -333,9 +334,7 @@ export const ChatProvider = ({ children }) => {
 
   const value = {
     allContacts,
-    chats,
     messages,
-    activeTab,
     selectedUser,
     isUsersLoading,
     isMessagesLoading,
@@ -343,18 +342,18 @@ export const ChatProvider = ({ children }) => {
     socket,
     onlineUsers,
     toggleSound,
-    setActiveTab: customSetActiveTab,
     setSelectedUser: customSetSelectedUser,
     getAllContacts,
-    getMyChatPartners,
     getMessagesByUserId,
     sendMessage,
     markAsRead,
     friends,
     friendRequests,
+    sentRequests, // NEW: Export sent requests state
     isFriendActionLoading,
     getFriends,
     getFriendRequests,
+    getSentRequests, // NEW: Export sent requests function
     searchUsers,
     sendFriendRequest,
     acceptFriendRequest,
@@ -369,7 +368,7 @@ export const ChatProvider = ({ children }) => {
 export const useChat = () => {
   const context = useContext(ChatContext);
   if (context === undefined) {
-    throw new Error("useChat phải được dùng bên trong ChatProvider");
+    throw new Error("useChat must be used within ChatProvider");
   }
   return context;
 };

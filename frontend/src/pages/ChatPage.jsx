@@ -1,109 +1,61 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useChat } from "../context/ChatContext";
-import { useNavigate } from "react-router-dom";
+import { ChatProvider } from "../context/ChatContext";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import { LoaderIcon } from "lucide-react";
+import NavigationSidebar from "../components/features/NavigationSidebar";
 
-import NavigationSidebar from "../components/chat/NavigationSidebar";
-import ConversationSidebar from "../components/chat/messages/ConversationSidebar";
-import ChatArea from "../components/chat/messages/ChatArea";
-import InfoSidebar from "../components/chat/messages/InfoSidebar";
-import FriendsList from "../components/chat/contact/FriendsList";
-
-import SettingsSidebar from "../components/chat/settings/SettingsSidebar";
-import SettingsDetail from "../components/chat/SettingsDetail";
-
-export default function ChatPage() {
-  const { authUser, isCheckingAuth } = useAuth();
-  const { selectedUser, setSelectedUser } = useChat();
+// Content component separated from Provider
+const ChatPageContent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [isInfoSidebarOpen, setIsInfoSidebarOpen] = useState(true);
+  // 1. Highlight Sidebar based on URL
+  const currentPath = location.pathname.split("/").pop();
+  const activePanel = currentPath === "messages" ? "chats" : currentPath;
 
-  // 'chats', 'friends', 'settings'
-  const [activePanel, setActivePanel] = useState("chats");
-
-  // ... (useEffect và check loading/auth ) ...
-  useEffect(() => {
-    if (!isCheckingAuth && !authUser) {
-      navigate("/login", { replace: true });
-    }
-  }, [authUser, isCheckingAuth, navigate]);
-
-  if (isCheckingAuth) { return null; /* or loading spinner */ }
-  if (!authUser) { return null; }
-
-  const handleSelectChatFromFriends = (chat) => {
-    setSelectedUser(chat);
-    setActivePanel("chats");
-  };
-
-  //render các cột sidebar
-  const renderPanel = () => {
-    switch (activePanel) {
-      case "friends":
-        return (
-          <FriendsList
-            onChatSelect={handleSelectChatFromFriends}
-          />
-        );
-      case "settings":
-        return (
-          <SettingsSidebar />
-        );
-      case "chats":
-      default:
-        return (
-          <ConversationSidebar
-            selectedChat={selectedUser}
-            onChatSelect={setSelectedUser}
-          />
-        );
-    }
-  };
-
-  // render phần chính  nội dung chat 
-  const renderMain = () => {
-    if (activePanel === "settings") {
-      return <SettingsDetail />;
-    }
-    // Khi ở 'chats' hoặc 'friends', vẫn hiển thị ChatArea
-    return (
-      <ChatArea
-        chat={selectedUser}
-        onToggleInfoSidebar={() => setIsInfoSidebarOpen(!isInfoSidebarOpen)}
-        isInfoSidebarOpen={isInfoSidebarOpen}
-      />
-    );
-  };
-
-  // reder phần thông tin 
-  const renderInfo = () => {
-    // Ẩn InfoSidebar khi đang ở màn hình Settings
-    if (activePanel === "settings") {
-      return null;
-    }
-
-    return isInfoSidebarOpen && selectedUser && (
-      <InfoSidebar
-        chat={selectedUser}
-        onClose={() => setIsInfoSidebarOpen(false)}
-      />
-    );
+  // 2. Navigate to URL when clicking Sidebar
+  const handlePanelChange = (panel) => {
+    const routeMap = {
+      home: "home",
+      chats: "messages",
+      friends: "friends",
+      calls: "calls",
+      settings: "settings",
+    };
+    navigate(`/chat/${routeMap[panel] || "home"}`);
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-100">
+    <div className="h-screen w-full bg-[#F2F0E9] flex items-center justify-start p-2 pr-2 font-sans">
+      <div className="w-full h-full flex gap-3 overflow-hidden">
+        <NavigationSidebar activePanel={activePanel} onPanelChange={handlePanelChange} />
 
-      <NavigationSidebar
-        activePanel={activePanel}
-        onPanelChange={setActivePanel}
-      />
-
-      {/* GỌI CÁC HÀM RENDER */}
-      {renderPanel()}
-      {renderMain()}
-      {renderInfo()}
-
+        <div className="flex-1 h-full min-w-0 bg-white rounded-3xl shadow-xl overflow-hidden relative">
+          {/* Child routes will render here via Outlet */}
+          <Outlet />
+        </div>
+      </div>
     </div>
+  );
+};
+
+export default function ChatPage() {
+  const { authUser, isCheckingAuth } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isCheckingAuth && !authUser) navigate("/login", { replace: true });
+  }, [authUser, isCheckingAuth, navigate]);
+
+  if (isCheckingAuth || !authUser) {
+    return <div className="h-screen flex justify-center items-center"><LoaderIcon className="animate-spin" /></div>;
+  }
+
+  // Wrap with ChatProvider at the page level
+  return (
+    <ChatProvider>
+      <ChatPageContent />
+    </ChatProvider>
   );
 }
