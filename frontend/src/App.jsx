@@ -13,8 +13,8 @@ import ChatDashboard from "./components/features/chat/ChatDashboard";
 import SettingsDashboard from "./components/features/settings/SettingsDashboard";
 import { useAuth } from "./context/AuthContext";
 import AuthLayout from './layouts/AuthLayout';
-import FriendsList from "./components/features/friends/FriendsList";     
-import SentRequests from "./components/features/friends/SentRequests";   
+import FriendsList from "./components/features/friends/FriendsList";
+import SentRequests from "./components/features/friends/SentRequests";
 function App() {
   const { authUser, isCheckingAuth } = useAuth();
 
@@ -31,32 +31,32 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        
+
         <Route element={<AuthLayout />}>
           <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/chat" />} />
           <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/chat" />} />
           <Route path="/forgot-password" element={!authUser ? <ForgotPasswordPage /> : <Navigate to="/chat" />} />
         </Route>
 
-        
 
-        <Route 
-          path="/call-window" 
-          element={authUser ? <CallPage /> : <Navigate to="/login" />} 
+
+        <Route
+          path="/call-window"
+          element={authUser ? <CallPage /> : <Navigate to="/login" />}
         />
         <Route path="/chat" element={authUser ? <ChatPage /> : <Navigate to="/login" />} >
           {/* Mặc định vào /chat sẽ chuyển hướng sang /chat/home */}
-          <Route index element={<Navigate to="home" replace />}/>
-          
+          <Route index element={<Navigate to="home" replace />} />
+
           {/* Các Route con */}
           <Route path="home" element={<HomeDashboard />} />
           <Route path="messages" element={<ChatDashboard />} />
           <Route path="friends" element={<FriendsDashboard />}>
-              <Route index element={<Navigate to="all" replace />} />
-              <Route path="all" element={<FriendsList type="all" />} />
-              <Route path="online" element={<FriendsList type="online" />} />
-              <Route path="requests" element={<FriendsList type="requests" />} />
-              <Route path="sent" element={<SentRequests />} />
+            <Route index element={<Navigate to="all" replace />} />
+            <Route path="all" element={<FriendsList type="all" />} />
+            <Route path="online" element={<FriendsList type="online" />} />
+            <Route path="requests" element={<FriendsList type="requests" />} />
+            <Route path="sent" element={<SentRequests />} />
           </Route>
           <Route path="calls" element={<CallsDashboard />} />
           <Route path="settings" element={<SettingsDashboard />} />

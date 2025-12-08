@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     setIsSigningUp(true);
     try {
       const res = await axiosInstance.post("/auth/signup", data);
+      console.log("Signup successful:", res.data);
       setAuthUser(res.data);
       toast.success("Account created successfully!");
     } catch (error) {
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoggingIn(true);
     try {
       const res = await axiosInstance.post("/auth/login", data);
+      console.log("Login successful:", res.data);
       setAuthUser(res.data);
       toast.success("Logged in successfully!");
     } catch (error) {
@@ -59,6 +61,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await axiosInstance.post("/auth/logout");
+      console.log("Logout successful");
       setAuthUser(null);
       toast.success("Logged out successfully");
     } catch (error) {
@@ -72,6 +75,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axiosInstance.patch("/auth/profile", data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      console.log("Profile update successful:", res.data);
       setAuthUser(res.data);
       toast.success("Profile updated successfully!");
     } catch (error) {
