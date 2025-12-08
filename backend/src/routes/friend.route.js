@@ -1,6 +1,6 @@
 import express from "express";
-import {protectRoute} from "../middleware/auth.middleware.js";
-import {arcjetProtection} from "../middleware/arcjet.middleware.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
+import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import {
     sendFriendRequest,
     acceptFriendRequest,
@@ -8,6 +8,7 @@ import {
     cancelFriendRequest,
     removeFriend,
     getFriendRequests,
+    getSentRequests,
     getFriends,
     searchUsers,
 } from "../controllers/friend.controller.js";
@@ -23,6 +24,7 @@ router.post("/cancel/:userId", cancelFriendRequest);
 router.delete("/remove/:userId", removeFriend);
 
 router.get("/requests", getFriendRequests);
+router.get("/requests/sent", getSentRequests);
 router.get("/list", getFriends);
 router.get("/search", searchUsers);
 

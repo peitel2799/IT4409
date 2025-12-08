@@ -15,6 +15,7 @@ const ChatContext = createContext();
 export const ChatProvider = ({ children }) => {
   // --- STATE ---
   const [allContacts, setAllContacts] = useState([]);
+  const [homeStats, setHomeStats] = useState({ calls: [], chats: [], notes: [] });
   const [messages, setMessages] = useState([]);
 
   // State UI
@@ -103,6 +104,16 @@ export const ChatProvider = ({ children }) => {
       );
     } finally {
       setIsUsersLoading(false);
+    }
+  }, []);
+
+  const getHomeStats = useCallback(async () => {
+    try {
+      // For now, return empty data until backend implements this endpoint
+      // TODO: Implement /api/stats/home endpoint in backend
+      setHomeStats({ calls: [], chats: [], notes: [] });
+    } catch (error) {
+      console.error("Failed to load home stats:", error);
     }
   }, []);
 
@@ -334,6 +345,7 @@ export const ChatProvider = ({ children }) => {
 
   const value = {
     allContacts,
+    homeStats,
     messages,
     selectedUser,
     isUsersLoading,
@@ -344,6 +356,7 @@ export const ChatProvider = ({ children }) => {
     toggleSound,
     setSelectedUser: customSetSelectedUser,
     getAllContacts,
+    getHomeStats,
     getMessagesByUserId,
     sendMessage,
     markAsRead,
