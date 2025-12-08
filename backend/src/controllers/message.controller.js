@@ -1,15 +1,20 @@
-import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
-import Message from "../models/Message.js";
-import User from "../models/User.js";
+import {
+  getAllContactsService,
+  getMessagesByUserIdService,
+  sendMessageService,
+  getChatPartnersService,
+  markMessagesAsReadService,
+  markSingleMessageAsReadService,
+} from "../services/message.service.js";
 
 export const getAllContacts = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate({path: "friends", select: "-password"});
-    res.status(200).json(user.friends || []);
+    const contacts = await getAllContactsService(req.user._id);
+    res.status(200).json(contacts);
   } catch (error) {
-    console.log("Error in getAllContacts:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("getAllContacts:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
@@ -18,17 +23,11 @@ export const getMessagesByUserId = async (req, res) => {
     const myId = req.user._id;
     const { id: userToChatId } = req.params;
 
-    const messages = await Message.find({
-      $or: [
-        { senderId: myId, receiverId: userToChatId },
-        { senderId: userToChatId, receiverId: myId },
-      ],
-    });
-
+    const messages = await getMessagesByUserIdService(myId, userToChatId);
     res.status(200).json(messages);
   } catch (error) {
-    console.log("Error in getMessages controller: ", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("getMessagesByUserId:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
@@ -38,33 +37,9 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
-    if (!text && !image) {
-      return res.status(400).json({ message: "Text or image is required." });
-    }
-    if (senderId.equals(receiverId)) {
-      return res.status(400).json({ message: "Cannot send messages to yourself." });
-    }
-    const receiverExists = await User.exists({ _id: receiverId });
-    if (!receiverExists) {
-      return res.status(404).json({ message: "Receiver not found." });
-    }
+    const newMessage = await sendMessageService(senderId, receiverId, text, image);
 
-    let imageUrl;
-    if (image) {
-      // upload base64 image to cloudinary
-      const uploadResponse = await cloudinary.uploader.upload(image);
-      imageUrl = uploadResponse.secure_url;
-    }
-
-    const newMessage = new Message({
-      senderId,
-      receiverId,
-      text,
-      image: imageUrl,
-    });
-
-    await newMessage.save();
-
+    // Emit socket event
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
@@ -72,36 +47,18 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json(newMessage);
   } catch (error) {
-    console.log("Error in sendMessage controller: ", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("sendMessage:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
 export const getChatPartners = async (req, res) => {
   try {
-    const loggedInUserId = req.user._id;
-
-    // find all the messages where the logged-in user is either sender or receiver
-    const messages = await Message.find({
-      $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
-    });
-
-    const chatPartnerIds = [
-      ...new Set(
-        messages.map((msg) =>
-          msg.senderId.toString() === loggedInUserId.toString()
-            ? msg.receiverId.toString()
-            : msg.senderId.toString()
-        )
-      ),
-    ];
-
-    const chatPartners = await User.find({ _id: { $in: chatPartnerIds } }).select("-password");
-
+    const chatPartners = await getChatPartnersService(req.user._id);
     res.status(200).json(chatPartners);
   } catch (error) {
-    console.error("Error in getChatPartners: ", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("getChatPartners:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
@@ -110,35 +67,23 @@ export const markAsRead = async (req, res) => {
     const myUserId = req.user._id;
     const { partnerId } = req.params;
 
-    if (!partnerId) {
-      return res.status(400).json({ message: "Partner ID is required" });
-    }
+    const result = await markMessagesAsReadService(myUserId, partnerId);
 
-    // Update all messages sent by partner to current user as read
-    const result = await Message.updateMany(
-      {
-        senderId: partnerId,
-        receiverId: myUserId,
-        isRead: false,
-      },
-      { $set: { isRead: true } }
-    );
-
-    // Notify sender that messages were read via socket.io
+    // Emit socket event
     const senderSocketId = getReceiverSocketId(partnerId);
     if (senderSocketId) {
       io.to(senderSocketId).emit("messagesRead", {
-        partnerId: myUserId.toString(),
+        partnerId: result.myUserId,
       });
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: "Messages marked as read",
-      updatedCount: result.modifiedCount 
+      updatedCount: result.updatedCount,
     });
   } catch (error) {
-    console.log("Error in markAsRead controller:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("markAsRead:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
@@ -146,17 +91,9 @@ export const markMessageAsRead = async (req, res) => {
   try {
     const { messageId } = req.params;
 
-    const message = await Message.findByIdAndUpdate(
-      messageId,
-      { isRead: true },
-      { new: true }
-    );
+    const message = await markSingleMessageAsReadService(messageId);
 
-    if (!message) {
-      return res.status(404).json({ message: "Message not found" });
-    }
-
-    // Notify sender that message was read
+    // Emit socket event
     const senderSocketId = getReceiverSocketId(message.senderId);
     if (senderSocketId) {
       io.to(senderSocketId).emit("messageRead", {
@@ -167,7 +104,7 @@ export const markMessageAsRead = async (req, res) => {
 
     res.status(200).json(message);
   } catch (error) {
-    console.log("Error in markMessageAsRead controller:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("markMessageAsRead:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

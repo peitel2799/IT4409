@@ -1,9 +1,22 @@
-import { Phone, Video, Sidebar, Pencil } from "lucide-react";
+import { Phone, Video, Sidebar, Cloud, HardDrive } from "lucide-react";
+import { useSocket } from "../../../context/SocketContext";
 
 export default function ChatHeader({ chat, onToggleInfoSidebar, isInfoSidebarOpen }) {
-  
-  // Hàm xử lý mở cửa sổ gọi
+  const { onlineUsers } = useSocket();
+
+  // Check if this is My Cloud (self-chat)
+  const isSelfChat = chat.isSelfChat;
+
+  // Check if this chat partner is online (My Cloud is always available)
+  const isOnline = isSelfChat || onlineUsers.includes(chat.id) || onlineUsers.includes(chat._id) || chat.isOnline;
+
+  // Get avatar with fallback
+  const avatarUrl = chat.avatar || chat.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.name || 'U')}`;
+
+  // Handle starting a call
   const handleStartCall = (isVideo) => {
+    if (isSelfChat) return; // Can't call yourself
+
     const width = 900;
     const height = 650;
     const left = (window.screen.width - width) / 2;
@@ -11,8 +24,8 @@ export default function ChatHeader({ chat, onToggleInfoSidebar, isInfoSidebarOpe
 
     const params = new URLSearchParams({
       name: chat.name,
-      avatar: chat.avatar,
-      id: chat.id || chat._id, // Đảm bảo lấy đúng ID
+      avatar: avatarUrl,
+      id: chat.id || chat._id,
       video: isVideo ? "true" : "false"
     });
 
@@ -24,46 +37,67 @@ export default function ChatHeader({ chat, onToggleInfoSidebar, isInfoSidebarOpe
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+    <div className={`flex items-center justify-between p-4 border-b bg-white/80 backdrop-blur-md sticky top-0 z-10 ${isSelfChat ? "border-blue-100" : "border-gray-100"
+      }`}>
       <div className="flex items-center gap-3 cursor-pointer group">
-        <img src={chat.avatar} alt={chat.name} className="w-10 h-10 rounded-full border border-gray-100 object-cover" />
+        {isSelfChat ? (
+          // Special cloud avatar for My Cloud
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center border border-blue-200">
+            <Cloud size={20} className="text-white" />
+          </div>
+        ) : (
+          <img src={avatarUrl} alt={chat.name} className="w-10 h-10 rounded-full border border-gray-100 object-cover" />
+        )}
         <div>
-           <div className="flex items-center gap-2">
-              <h3 className="font-bold text-gray-800 text-sm group-hover:text-pink-600 transition-colors">{chat.name}</h3>
-              <Pencil size={12} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-           </div>
-           <p className="text-xs text-green-500 font-medium flex items-center gap-1">
-             <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Online
-           </p>
+          <div className="flex items-center gap-2">
+            <h3 className={`font-bold text-sm transition-colors ${isSelfChat
+                ? "text-blue-700 group-hover:text-blue-800"
+                : "text-gray-800 group-hover:text-pink-600"
+              }`}>
+              {chat.name}
+            </h3>
+            {isSelfChat && <HardDrive size={12} className="text-blue-400" />}
+          </div>
+          <p className={`text-xs font-medium flex items-center gap-1 ${isSelfChat ? 'text-blue-500' : (isOnline ? 'text-green-500' : 'text-gray-400')
+            }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isSelfChat ? 'bg-blue-500' : (isOnline ? 'bg-green-500' : 'bg-gray-300')
+              }`}></span>
+            {isSelfChat ? 'Save notes & files' : (isOnline ? 'Online' : 'Offline')}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-1">
-        {/* Nút Gọi Thoại */}
-        <button 
-            onClick={() => handleStartCall(false)}
-            className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
-            title="Voice Call"
-        >
-            <Phone size={20} />
-        </button>
+        {!isSelfChat && (
+          <>
+            {/* Voice Call Button */}
+            <button
+              onClick={() => handleStartCall(false)}
+              className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
+              title="Voice Call"
+            >
+              <Phone size={20} />
+            </button>
 
-        {/* Nút Gọi Video */}
-        <button 
-            onClick={() => handleStartCall(true)}
-            className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
-            title="Video Call"
-        >
-            <Video size={20} />
-        </button>
-        
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
-        
+            {/* Video Call Button */}
+            <button
+              onClick={() => handleStartCall(true)}
+              className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
+              title="Video Call"
+            >
+              <Video size={20} />
+            </button>
+
+            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+          </>
+        )}
+
         <button
           onClick={onToggleInfoSidebar}
-          className={`p-2 rounded-xl transition-all ${
-            isInfoSidebarOpen ? "bg-pink-50 text-pink-500" : "text-gray-400 hover:text-gray-800 hover:bg-gray-100"
-          }`}
+          className={`p-2 rounded-xl transition-all ${isInfoSidebarOpen
+              ? isSelfChat ? "bg-blue-50 text-blue-500" : "bg-pink-50 text-pink-500"
+              : "text-gray-400 hover:text-gray-800 hover:bg-gray-100"
+            }`}
         >
           <Sidebar size={20} />
         </button>

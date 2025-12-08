@@ -1,10 +1,11 @@
-import { useEffect, useRef, useMemo } from "react"; 
+import { useEffect, useRef, useMemo } from "react";
 import { useChat } from "../../../context/ChatContext";
+import { useAuth } from "../../../context/AuthContext";
 import { LoaderIcon } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 
 function formatDate(dateStr) {
-  if(!dateStr) return "";
+  if (!dateStr) return "";
   const date = new Date(dateStr);
   const today = new Date();
   const yesterday = new Date();
@@ -15,39 +16,40 @@ function formatDate(dateStr) {
 }
 
 function formatTime(dateStr) {
-  if(!dateStr) return "";
+  if (!dateStr) return "";
   return new Date(dateStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function MessageList({ chat }) {
   const messagesEndRef = useRef(null);
-  const { messages, getMessages, isMessagesLoading } = useChat();
+  const { messages, getMessagesByUserId, isMessagesLoading } = useChat();
+  const { authUser } = useAuth();
 
   useEffect(() => {
-    if (chat?.id || chat?._id) getMessages(chat.id || chat._id);
-  }, [chat, getMessages]); 
+    if (chat?.id || chat?._id) getMessagesByUserId(chat.id || chat._id);
+  }, [chat, getMessagesByUserId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]); 
+  }, [messages]);
 
   const groupedMessages = useMemo(() => {
     const groups = {};
     if (!messages) return groups;
-    messages.forEach((msg) => { 
+    messages.forEach((msg) => {
       const dateKey = new Date(msg.createdAt).toDateString();
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(msg);
     });
     return groups;
-  }, [messages]); 
+  }, [messages]);
 
   if (isMessagesLoading) {
     return <div className="flex-1 flex items-center justify-center"><LoaderIcon className="w-8 h-8 animate-spin text-pink-300" /></div>;
   }
-  
+
   if (!messages || messages.length === 0) {
-     return <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-sm">No messages yet.</div>;
+    return <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-sm">No messages yet.</div>;
   }
 
   return (
@@ -61,12 +63,12 @@ export default function MessageList({ chat }) {
           </div>
           <div className="space-y-1">
             {msgs.map((msg) => (
-                <MessageBubble
-                  key={msg._id || msg.id}
-                  message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
-                  isMe={msg.senderId === "me"} 
-                  avatar={chat.avatar}
-                />
+              <MessageBubble
+                key={msg._id || msg.id}
+                message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
+                isMe={msg.senderId === authUser?._id}
+                avatar={chat.avatar}
+              />
             ))}
           </div>
         </div>

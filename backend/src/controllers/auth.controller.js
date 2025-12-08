@@ -1,107 +1,51 @@
 import { sendWelcomeEmail } from "../emails/emailHandlers.js";
 import { generateToken } from "../lib/utils.js";
-import User from "../models/User.js";
-import bcrypt from "bcryptjs";
 import { ENV } from "../lib/env.js";
-import cloudinary from "../lib/cloudinary.js";
-import "dotenv/config";
+import {
+  signupService,
+  loginService,
+  updateProfileService,
+  getUserByIdService,
+  changePasswordService,
+} from "../services/auth.service.js";
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
 
   try {
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    const user = await signupService(fullName, email, password);
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
+    // Generate token after successful signup
+    generateToken(user._id, res);
 
-    // check if emailis valid: regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
+    res.status(201).json(user);
 
-    const user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: "Email already exists" });
-
-    // 123456 => $dnjasdkasj_?dmsakmk
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new User({
-      fullName,
-      email,
-      password: hashedPassword,
-    });
-
-    if (newUser) {
-      // before CR:
-      // generateToken(newUser._id, res);
-      // await newUser.save();
-
-      // after CR:
-      // Persist user first, then issue auth cookie
-      const savedUser = await newUser.save();
-      generateToken(savedUser._id, res);
-
-      res.status(201).json({
-        _id: newUser._id,
-        fullName: newUser.fullName,
-        email: newUser.email,
-        profilePic: newUser.profilePic,
-      });
-
-      try {
-        await sendWelcomeEmail(savedUser.email, savedUser.fullName, ENV.CLIENT_URL);
-      } catch (error) {
-        console.error("Failed to send welcome email:", error);
-      }
-    } else {
-      res.status(400).json({ message: "Invalid user data" });
+    // Send welcome email (non-blocking)
+    try {
+      await sendWelcomeEmail(user.email, user.fullName, ENV.CLIENT_URL);
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
     }
   } catch (error) {
-    console.log("Error in signup controller:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("signup:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  console.log("Login attempt with body:", req.body);
 
-  if (!email || !password) {
-    console.log("Login failed: Missing email or password");
-    return res.status(400).json({ message: "Email and password are required" });
-  }
 
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log(`Login failed: User not found for email ${email}`);
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-    // never tell the client which one is incorrect: password or email
+    const user = await loginService(email, password);
 
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    if (!isPasswordCorrect) {
-      console.log(`Login failed: Incorrect password for email ${email}`);
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
+    // Generate token after successful login
     generateToken(user._id, res);
 
-    res.status(200).json({
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-    });
+    res.status(200).json(user);
   } catch (error) {
-    console.error("Error in login controller:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("login:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
 
@@ -113,21 +57,37 @@ export const logout = (_, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
-    if (!profilePic) return res.status(400).json({ message: "Profile pic is required" });
-
     const userId = req.user._id;
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { profilePic: uploadResponse.secure_url },
-      { new: true }
-    );
+    const updatedUser = await updateProfileService(userId, profilePic);
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.log("Error in update profile:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("updateProfile:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+export const checkAuth = async (req, res) => {
+  try {
+    const user = await getUserByIdService(req.user._id);
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("checkAuth:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user._id;
+
+    const result = await changePasswordService(userId, currentPassword, newPassword);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("changePassword:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

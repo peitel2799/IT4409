@@ -4,6 +4,7 @@ import express from "express";
 import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
 import Message from "../models/Message.js";
+
 const app = express();
 const server = http.createServer(app);
 
@@ -28,7 +29,7 @@ export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
 
-// this is for storig online users
+// this is for storing online users
 const userSocketMap = {}; // {userId:socketId}
 
 io.on("connection", (socket) => {
@@ -41,6 +42,7 @@ io.on("connection", (socket) => {
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   // Handle sending messages via socket
+  // Note: Self-messages are allowed for "My Cloud" feature (personal notes/files)
   socket.on("sendMessage", async (data) => {
     try {
       const { receiverId, text, image } = data;
@@ -52,19 +54,24 @@ io.on("connection", (socket) => {
         receiverId,
         text,
         image,
-        isRead: false,
+        isRead: senderId === receiverId, // Self-messages are auto-read
       });
 
       await newMessage.save();
 
-      // Emit message to receiver if online
-      const receiverSocketId = getReceiverSocketId(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receiveMessage", newMessage);
-      }
+      // For self-messages (My Cloud), only emit messageSent to avoid duplicates
+      if (senderId === receiverId) {
+        socket.emit("messageSent", newMessage);
+      } else {
+        // Emit message to receiver if online
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("receiveMessage", newMessage);
+        }
 
-      // Emit confirmation back to sender
-      socket.emit("messageSent", newMessage);
+        // Emit confirmation back to sender
+        socket.emit("messageSent", newMessage);
+      }
     } catch (error) {
       console.log("Error in sendMessage socket event:", error);
       socket.emit("error", { message: "Failed to send message" });

@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { SocketProvider } from "../context/SocketContext";
+import { FriendProvider } from "../context/FriendContext";
 import { ChatProvider } from "../context/ChatContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { LoaderIcon } from "lucide-react";
 import NavigationSidebar from "../components/features/NavigationSidebar";
 
-// Content component separated from Provider
+// Content component separated from Providers
 const ChatPageContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,10 +54,15 @@ export default function ChatPage() {
     return <div className="h-screen flex justify-center items-center"><LoaderIcon className="animate-spin" /></div>;
   }
 
-  // Wrap with ChatProvider at the page level
+  // Wrap with all providers in proper order:
+  // SocketProvider -> FriendProvider -> ChatProvider
   return (
-    <ChatProvider>
-      <ChatPageContent />
-    </ChatProvider>
+    <SocketProvider>
+      <FriendProvider>
+        <ChatProvider>
+          <ChatPageContent />
+        </ChatProvider>
+      </FriendProvider>
+    </SocketProvider>
   );
 }

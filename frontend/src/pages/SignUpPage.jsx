@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { MessageCircleIcon, UserIcon, MailIcon, LockIcon, LoaderIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import toast from "react-hot-toast"; 
 
 function SignUpPage() {
   const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
-  const [errors, setErrors] = useState({}); 
- 
+  const [errors, setErrors] = useState({});
+
   const { signup, isSigningUp, authUser, isCheckingAuth } = useAuth();
   const navigate = useNavigate();
 
@@ -15,7 +14,7 @@ function SignUpPage() {
     if (!isCheckingAuth && authUser) {
       navigate("/chat", { replace: true });
     }
-  }, [authUser, isCheckingAuth, navigate]); 
+  }, [authUser, isCheckingAuth, navigate]);
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -51,9 +50,8 @@ function SignUpPage() {
 
     try {
       await signup(formData);
-      console.log("Signup successful");
     } catch (error) {
-
+      // Error handled in AuthContext
     }
   };
 
@@ -88,9 +86,8 @@ function SignUpPage() {
                     setFormData({ ...formData, fullName: e.target.value });
                     setErrors({ ...errors, fullName: "" });
                   }}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                    errors.fullName ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${errors.fullName ? "border-red-500" : "border-gray-300"
+                    }`}
                   placeholder="John Doe"
                   required
                 />
@@ -110,9 +107,8 @@ function SignUpPage() {
                     setFormData({ ...formData, email: e.target.value });
                     setErrors({ ...errors, email: "" });
                   }}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D3D0FB] ${
-                    errors.email ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D3D0FB] ${errors.email ? "border-red-500" : "border-gray-300"
+                    }`}
                   placeholder="johndoe@gmail.com"
                   required
                 />
@@ -132,9 +128,8 @@ function SignUpPage() {
                     setFormData({ ...formData, password: e.target.value });
                     setErrors({ ...errors, password: "" });
                   }}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300 ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300 ${errors.password ? "border-red-500" : "border-gray-300"
+                    }`}
                   placeholder="Enter your password"
                   required
                 />
@@ -155,7 +150,7 @@ function SignUpPage() {
             <Link to="/login" className="text-pink-400 hover:underline font-medium">
               Already have an account? Login
             </Link>
-          <br/>
+            <br />
             <Link to="/" className="text-[#847ef2] hover:underline font-medium">
               or Back to Home
             </Link>

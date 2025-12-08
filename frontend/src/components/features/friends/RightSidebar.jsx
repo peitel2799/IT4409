@@ -1,20 +1,29 @@
 import { useChat } from "../../../context/ChatContext";
+import { useFriend } from "../../../context/FriendContext";
+import { useSocket } from "../../../context/SocketContext";
 
 export default function RightSidebar({ onStartChat }) {
-  const { friendRequests, allContacts } = useChat();
-  const onlineFriends = allContacts.filter(c => c.status === "online");
+  const { allContacts } = useChat();
+  const { friendRequests, acceptFriendRequest, rejectFriendRequest } = useFriend();
+  const { onlineUsers } = useSocket();
+
+  // Filter online friends using onlineUsers array
+  const onlineFriends = (allContacts || []).filter(c => onlineUsers.includes(c._id));
+
+  // Get avatar with fallback
+  const getAvatar = (user) =>
+    user.profilePic || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'U')}`;
 
   const renderFriendItem = (user, showButtons = false) => (
     <div
       key={user.id || user._id}
-      className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
-        !showButtons ? "hover:bg-gray-50 cursor-pointer" : ""
-      }`}
+      className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${!showButtons ? "hover:bg-gray-50 cursor-pointer" : ""
+        }`}
     >
       <div className="relative flex-shrink-0">
         <img
-          src={user.avatar}
-          alt={user.name || user.fullName}
+          src={getAvatar(user)}
+          alt={user.fullName || user.name}
           className="w-10 h-10 rounded-full object-cover"
         />
         {!showButtons && (
@@ -23,14 +32,20 @@ export default function RightSidebar({ onStartChat }) {
       </div>
       <div className="flex-1 min-w-0">
         <h4 className="text-sm font-medium text-gray-700 truncate">
-          {user.name || user.fullName}
+          {user.fullName || user.name}
         </h4>
         {showButtons && (
           <div className="flex gap-2 mt-1">
-            <button className="flex-1 text-xs bg-pink-500 hover:bg-pink-600 text-white py-1 rounded-lg transition">
+            <button
+              onClick={() => acceptFriendRequest(user._id)}
+              className="flex-1 text-xs bg-pink-500 hover:bg-pink-600 text-white py-1 rounded-lg transition"
+            >
               Accept
             </button>
-            <button className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-1 rounded-lg transition">
+            <button
+              onClick={() => rejectFriendRequest(user._id)}
+              className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-1 rounded-lg transition"
+            >
               Delete
             </button>
           </div>
@@ -60,9 +75,13 @@ export default function RightSidebar({ onStartChat }) {
       <div>
         <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Active Now</h3>
         <div className="flex flex-col gap-2">
-          {onlineFriends.map((user) => (
-            <div onClick={() => onStartChat(user)}>{renderFriendItem(user)}</div>
-          ))}
+          {onlineFriends.length > 0 ? (
+            onlineFriends.map((user) => (
+              <div key={user._id} onClick={() => onStartChat(user)}>{renderFriendItem(user)}</div>
+            ))
+          ) : (
+            <p className="text-xs text-gray-400 italic">No friends online</p>
+          )}
         </div>
       </div>
     </div>

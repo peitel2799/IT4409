@@ -10,8 +10,8 @@ import AddFriendButton from "./AddFriendButton"; // Import nút mới
 export default function FriendsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setSelectedUser } = useChat(); // Nếu cần dùng cho RightSidebar
-  
+  const { setSelectedUser } = useChat();
+
   // State giao diện chung
   const [viewMode, setViewMode] = useState("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +32,7 @@ export default function FriendsDashboard() {
 
   return (
     <div className="flex h-full w-full bg-[#FAFAFA]">
-      
+
       {/* LEFT SIDEBAR */}
       <div className="w-64 h-full flex-shrink-0 hidden md:block">
         <FriendsSidebar />
@@ -40,32 +40,32 @@ export default function FriendsDashboard() {
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 h-full min-w-0 flex flex-col relative">
-        <FriendsHeader 
-            title={getPageTitle()}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            showSearch={true}
-            showToggle={true}
+        <FriendsHeader
+          title={getPageTitle()}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          showSearch={true}
+          showToggle={true}
         />
-        
+
         <div className="flex-1 overflow-hidden p-6 relative">
-             {/* 
+          {/* 
                 Outlet là nơi các component con (FriendsList, SentRequests) 
                 sẽ được render tùy theo Route.
                 Ta truyền context để con nhận được search & viewMode.
              */}
-             <Outlet context={{ searchQuery, viewMode, onStartChat: handleStartChat }} />
+          <Outlet context={{ searchQuery, viewMode, onStartChat: handleStartChat }} />
 
-             {/* Nút Add Friend nằm đè lên mọi tab */}
-             <AddFriendButton />
+          {/* Nút Add Friend nằm đè lên mọi tab */}
+          <AddFriendButton />
         </div>
       </div>
 
       {/* RIGHT SIDEBAR */}
       <div className="w-72 h-full flex-shrink-0 hidden xl:block">
-         <RightSidebar onStartChat={handleStartChat} />
+        <RightSidebar onStartChat={handleStartChat} />
       </div>
     </div>
   );

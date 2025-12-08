@@ -8,7 +8,7 @@ export default function ChatArea({ chat, onToggleInfoSidebar, isInfoSidebarOpen 
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full bg-[#FAFAFA]">
         <div className="w-40 h-40 bg-gray-100 rounded-full mb-4 flex items-center justify-center">
-             <span className="text-4xl">💬</span>
+          <span className="text-4xl">💬</span>
         </div>
         <p className="text-gray-400 font-medium text-sm">Select a conversation to start chatting</p>
       </div>
@@ -17,13 +17,13 @@ export default function ChatArea({ chat, onToggleInfoSidebar, isInfoSidebarOpen 
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white relative">
-      <ChatHeader 
-        chat={chat} 
+      <ChatHeader
+        chat={chat}
         onToggleInfoSidebar={onToggleInfoSidebar}
         isInfoSidebarOpen={isInfoSidebarOpen}
       />
       <MessageList chat={chat} />
-      <ChatInput />
+      <ChatInput chat={chat} />
     </div>
   );
 }

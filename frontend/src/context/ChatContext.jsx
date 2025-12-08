@@ -8,7 +8,7 @@ import {
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { useAuth } from "./AuthContext";
-import { io } from "socket.io-client";
+import { useSocket } from "./SocketContext";
 
 const ChatContext = createContext();
 
@@ -18,79 +18,25 @@ export const ChatProvider = ({ children }) => {
   const [homeStats, setHomeStats] = useState({ calls: [], chats: [], notes: [] });
   const [messages, setMessages] = useState([]);
 
-  // State UI
+  // UI State
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(
     () => JSON.parse(localStorage.getItem("isSoundEnabled")) === true
   );
-  const [socket, setSocket] = useState(null);
-  const [onlineUsers, setOnlineUsers] = useState([]);
-  const [friends, setFriends] = useState([]);
-  const [friendRequests, setFriendRequests] = useState([]);
-  const [sentRequests, setSentRequests] = useState([]); // NEW: Sent friend requests
-  const [isFriendActionLoading, setIsFriendActionLoading] = useState(false);
+
   const { authUser } = useAuth();
+  const { socket } = useSocket();
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (authUser) {
-      const BASE_URL =
-        import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
-      const newSocket = io(BASE_URL, {
-        withCredentials: true,
-        transports: ['websocket', 'polling'],
-      });
-
-      newSocket.on("getOnlineUsers", (userIds) => {
-        setOnlineUsers(userIds);
-      });
-
-      newSocket.on("receiveMessage", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
-        if (isSoundEnabled) {
-          // Play notification sound if enabled
-        }
-      });
-
-      newSocket.on("messageSent", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
-      });
-
-      newSocket.on("messagesRead", (data) => {
-        // Update UI to show messages are read
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.senderId === authUser._id && msg.receiverId === data.partnerId
-              ? { ...msg, isRead: true }
-              : msg
-          )
-        );
-      });
-
-      setSocket(newSocket);
-
-      return () => {
-        newSocket.disconnect();
-        setSocket(null);
-      };
-    } else {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-      }
-    }
-  }, [authUser, isSoundEnabled]);
-
+  // --- SOUND TOGGLE ---
   const toggleSound = useCallback(() => {
     const newSoundState = !isSoundEnabled;
     localStorage.setItem("isSoundEnabled", newSoundState);
     setIsSoundEnabled(newSoundState);
   }, [isSoundEnabled]);
 
-  const customSetSelectedUser = (user) => setSelectedUser(user);
-
+  // --- CONTACTS & STATS ---
   const getAllContacts = useCallback(async () => {
     setIsUsersLoading(true);
     try {
@@ -108,15 +54,56 @@ export const ChatProvider = ({ children }) => {
   }, []);
 
   const getHomeStats = useCallback(async () => {
+    // Helper to format time as relative time
+    const formatTimeAgo = (dateStr) => {
+      if (!dateStr) return "";
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays === 1) return "Yesterday";
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    };
+
     try {
-      // For now, return empty data until backend implements this endpoint
-      // TODO: Implement /api/stats/home endpoint in backend
-      setHomeStats({ calls: [], chats: [], notes: [] });
+      // Fetch chat partners from the backend
+      const res = await axiosInstance.get("/messages/chats");
+      const chatPartners = res.data || [];
+
+      // Transform chat partners into the format expected by ConversationSidebar
+      const chats = chatPartners.map((partner) => {
+        // Check if this is a self-chat (My Cloud)
+        const isSelfChat = authUser && partner._id === authUser._id;
+
+        return {
+          id: partner._id,
+          name: isSelfChat ? "My Cloud" : (partner.fullName || partner.username || "Unknown"),
+          avatar: isSelfChat
+            ? "https://cdn-icons-png.flaticon.com/512/4144/4144099.png" // Cloud icon
+            : (partner.avatar || partner.profilePic || "https://ui-avatars.com/api/?name=" + encodeURIComponent(partner.fullName || partner.username || "U")),
+          lastMessage: partner.lastMessage || "",
+          time: formatTimeAgo(partner.lastMessageTime),
+          unread: partner.unreadCount || 0,
+          isOnline: isSelfChat ? true : (partner.isOnline || false), // My Cloud is always "available"
+          isSelfChat: isSelfChat, // Flag to identify My Cloud
+        };
+      });
+
+      setHomeStats({ calls: [], chats, notes: [] });
     } catch (error) {
       console.error("Failed to load home stats:", error);
+      setHomeStats({ calls: [], chats: [], notes: [] });
     }
   }, []);
 
+  // --- MESSAGES ---
   const getMessagesByUserId = useCallback(
     async (userId) => {
       setIsMessagesLoading(true);
@@ -153,13 +140,16 @@ export const ChatProvider = ({ children }) => {
         return;
       }
 
-      if (socket) {
-        socket.emit("sendMessage", {
-          receiverId,
-          text,
-          image,
-        });
+      if (!socket) {
+        toast.error("Not connected. Please refresh the page.");
+        return;
       }
+
+      socket.emit("sendMessage", {
+        receiverId,
+        text,
+        image,
+      });
     },
     [socket]
   );
@@ -179,200 +169,60 @@ export const ChatProvider = ({ children }) => {
     [socket]
   );
 
-  const getFriendRequests = useCallback(async () => {
-    try {
-      const res = await axiosInstance.get("/friends/requests");
-      setFriendRequests(res.data);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to load friend requests"
-      );
-    }
-  }, []);
-
-  // NEW: Get sent friend requests
-  const getSentRequests = useCallback(async () => {
-    try {
-      const res = await axiosInstance.get("/friends/requests/sent");
-      setSentRequests(res.data);
-    } catch (error) {
-      console.error("Failed to load sent requests", error);
-      toast.error(
-        error.response?.data?.message || "Failed to load sent requests"
-      );
-    }
-  }, []);
-
-  const getFriends = useCallback(async () => {
-    try {
-      const res = await axiosInstance.get("/friends/list");
-      setFriends(res.data);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to load friends"
-      );
-    }
-  }, []);
-
-  // Load friends and friend requests when authUser changes
-  useEffect(() => {
-    if (authUser) {
-      getFriends();
-      getFriendRequests();
-      getSentRequests(); // NEW: Load sent requests
-    }
-  }, [authUser, getFriends, getFriendRequests, getSentRequests]);
-
-  // Setup friend request socket listeners
+  // --- SOCKET LISTENERS FOR MESSAGES ---
   useEffect(() => {
     if (socket && authUser) {
-      socket.on("friendRequestReceived", async () => {
-        await getFriendRequests();
+      socket.on("receiveMessage", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+        if (isSoundEnabled) {
+          // Play notification sound if enabled
+        }
       });
 
-      socket.on("friendRequestAccepted", async () => {
-        await Promise.all([getFriends(), getFriendRequests()]);
+      socket.on("messageSent", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
+
+      socket.on("messagesRead", (data) => {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.senderId === authUser._id && msg.receiverId === data.partnerId
+              ? { ...msg, isRead: true }
+              : msg
+          )
+        );
       });
 
       return () => {
-        socket.off("friendRequestReceived");
-        socket.off("friendRequestAccepted");
+        socket.off("receiveMessage");
+        socket.off("messageSent");
+        socket.off("messagesRead");
       };
     }
-  }, [socket, authUser, getFriends, getFriendRequests]);
-
-  const searchUsers = useCallback(async (keyword) => {
-    const res = await axiosInstance.get("/friends/search", {
-      params: { q: keyword },
-    });
-    return res.data;
-  }, []);
-
-  const sendFriendRequest = useCallback(
-    async (userId) => {
-      try {
-        setIsFriendActionLoading(true);
-        const res = await axiosInstance.post(`/friends/request/${userId}`);
-        toast.success("Friend request sent successfully");
-        await Promise.all([getFriendRequests(), getFriends(), getSentRequests()]); // NEW: Refresh sent requests
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Failed to send friend request"
-        );
-        throw error;
-      } finally {
-        setIsFriendActionLoading(false);
-      }
-    },
-    [getFriendRequests, getFriends, getSentRequests]
-  );
-
-  const acceptFriendRequest = useCallback(
-    async (userId) => {
-      try {
-        setIsFriendActionLoading(true);
-        const res = await axiosInstance.post(`/friends/accept/${userId}`);
-        toast.success("Friend request accepted successfully");
-        await Promise.all([getFriendRequests(), getFriends()]);
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Failed to accept friend request"
-        );
-        throw error;
-      } finally {
-        setIsFriendActionLoading(false);
-      }
-    },
-    [getFriendRequests, getFriends]
-  );
-
-  const rejectFriendRequest = useCallback(
-    async (userId) => {
-      try {
-        setIsFriendActionLoading(true);
-        const res = await axiosInstance.post(`/friends/reject/${userId}`);
-        toast.success("Friend request rejected successfully");
-        await getFriendRequests();
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Failed to reject friend request"
-        );
-        throw error;
-      } finally {
-        setIsFriendActionLoading(false);
-      }
-    },
-    [getFriendRequests]
-  );
-
-  const cancelFriendRequest = useCallback(
-    async (userId) => {
-      try {
-        setIsFriendActionLoading(true);
-        const res = await axiosInstance.post(`/friends/cancel/${userId}`);
-        toast.success("Friend request cancelled successfully");
-        await Promise.all([getFriendRequests(), getSentRequests()]); // NEW: Refresh sent requests
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Failed to cancel friend request"
-        );
-        throw error;
-      } finally {
-        setIsFriendActionLoading(false);
-      }
-    },
-    [getFriendRequests, getSentRequests]
-  );
-
-  const removeFriend = useCallback(
-    async (userId) => {
-      try {
-        setIsFriendActionLoading(true);
-        const res = await axiosInstance.delete(`/friends/remove/${userId}`);
-        toast.success("Friend removed successfully");
-        await getFriends();
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to remove friend");
-        throw error;
-      } finally {
-        setIsFriendActionLoading(false);
-      }
-    },
-    [getFriends]
-  );
+  }, [socket, authUser, isSoundEnabled]);
 
   const value = {
+    // Contacts & Stats
     allContacts,
     homeStats,
-    messages,
-    selectedUser,
     isUsersLoading,
-    isMessagesLoading,
-    isSoundEnabled,
-    socket,
-    onlineUsers,
-    toggleSound,
-    setSelectedUser: customSetSelectedUser,
     getAllContacts,
     getHomeStats,
+
+    // Messages
+    messages,
+    isMessagesLoading,
     getMessagesByUserId,
     sendMessage,
     markAsRead,
-    friends,
-    friendRequests,
-    sentRequests, // NEW: Export sent requests state
-    isFriendActionLoading,
-    getFriends,
-    getFriendRequests,
-    getSentRequests, // NEW: Export sent requests function
-    searchUsers,
-    sendFriendRequest,
-    acceptFriendRequest,
-    rejectFriendRequest,
-    cancelFriendRequest,
-    removeFriend,
+
+    // Selected User
+    selectedUser,
+    setSelectedUser,
+
+    // Sound
+    isSoundEnabled,
+    toggleSound,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
