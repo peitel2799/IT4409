@@ -140,18 +140,26 @@ export const ChatProvider = ({ children }) => {
         return;
       }
 
-      if (!socket) {
-        toast.error("Not connected. Please refresh the page.");
-        return;
-      }
+      try {
+        const res = await axiosInstance.post(`/messages/send/${receiverId}`, {
+          text,
+          image,
+        });
 
-      socket.emit("sendMessage", {
-        receiverId,
-        text,
-        image,
-      });
+        // Optimistically add message to UI or let socket handle it
+        // If your backend emits 'newMessage' upon saving, you might not need to manually add it here
+        // to avoid duplicates if the socket event comes in quickly.
+        // However, for immediate feedback, you can add it.
+        setMessages((prev) => [...prev, res.data]);
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to send message"
+        );
+      }
     },
-    [socket]
+    []
   );
 
   const markAsRead = useCallback(
@@ -172,16 +180,14 @@ export const ChatProvider = ({ children }) => {
   // --- SOCKET LISTENERS FOR MESSAGES ---
   useEffect(() => {
     if (socket && authUser) {
-      socket.on("receiveMessage", (message) => {
+      socket.on("newMessage", (message) => {
         setMessages((prevMessages) => [...prevMessages, message]);
         if (isSoundEnabled) {
           // Play notification sound if enabled
         }
       });
 
-      socket.on("messageSent", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
-      });
+
 
       socket.on("messagesRead", (data) => {
         setMessages((prevMessages) =>
@@ -195,7 +201,7 @@ export const ChatProvider = ({ children }) => {
 
       return () => {
         socket.off("receiveMessage");
-        socket.off("messageSent");
+
         socket.off("messagesRead");
       };
     }

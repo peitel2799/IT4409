@@ -3,20 +3,13 @@ import http from "http";
 import express from "express";
 import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
-import Message from "../models/Message.js";
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      if (!origin || origin === ENV.CLIENT_URL || origin.startsWith("http://localhost:")) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: [ENV.CLIENT_URL],
     credentials: true,
   },
 });
@@ -29,7 +22,7 @@ export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
 
-// this is for storing online users
+// this is for storig online users
 const userSocketMap = {}; // {userId:socketId}
 
 io.on("connection", (socket) => {
@@ -40,70 +33,6 @@ io.on("connection", (socket) => {
 
   // io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
-
-  // Handle sending messages via socket
-  // Note: Self-messages are allowed for "My Cloud" feature (personal notes/files)
-  socket.on("sendMessage", async (data) => {
-    try {
-      const { receiverId, text, image } = data;
-      const senderId = socket.userId;
-
-      // Create new message document
-      const newMessage = new Message({
-        senderId,
-        receiverId,
-        text,
-        image,
-        isRead: senderId === receiverId, // Self-messages are auto-read
-      });
-
-      await newMessage.save();
-
-      // For self-messages (My Cloud), only emit messageSent to avoid duplicates
-      if (senderId === receiverId) {
-        socket.emit("messageSent", newMessage);
-      } else {
-        // Emit message to receiver if online
-        const receiverSocketId = getReceiverSocketId(receiverId);
-        if (receiverSocketId) {
-          io.to(receiverSocketId).emit("receiveMessage", newMessage);
-        }
-
-        // Emit confirmation back to sender
-        socket.emit("messageSent", newMessage);
-      }
-    } catch (error) {
-      console.log("Error in sendMessage socket event:", error);
-      socket.emit("error", { message: "Failed to send message" });
-    }
-  });
-
-  // Update all messages from partnerId sent to myUserId to "seen"
-  socket.on("markAsRead", async (data) => {
-    try {
-      const { partnerId } = data;
-      const myUserId = socket.userId;
-
-      await Message.updateMany(
-        {
-          senderId: partnerId,
-          receiverId: myUserId,
-          isRead: false,
-        },
-        { $set: { isRead: true } }
-      );
-
-      // Notify sender that their messages were read
-      const senderSocketId = getReceiverSocketId(partnerId);
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("messagesRead", {
-          partnerId: myUserId.toString(),
-        });
-      }
-    } catch (error) {
-      console.log("Error marking messages as read: ", error);
-    }
-  });
 
   // with socket.on we listen for events from clients
   socket.on("disconnect", () => {

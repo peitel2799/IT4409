@@ -39,6 +39,10 @@ export default function FriendsList({ type }) {
         rawData = contactsWithStatus;
         break;
     }
+
+    // Ensure rawData is an array before filtering
+    if (!Array.isArray(rawData)) return [];
+
     // Filter by search query
     return rawData.filter(item => {
       const name = item.fullName || item.name || "";
