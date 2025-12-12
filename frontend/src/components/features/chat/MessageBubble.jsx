@@ -78,12 +78,11 @@ export default function MessageBubble({ message, isMe, avatar, isLastInGroup }) 
             />
           )}
           {message.audio && (
-            <div className={`flex items-center gap-2 min-w-[200px] ${isMe ? "text-white" : "text-gray-800"}`}>
+            <div className={`flex items-center gap-2 w-full min-w-[200px] sm:min-w-[280px] max-w-full ${isMe ? "text-white" : "text-gray-800"}`}>
               <audio
                 controls
                 src={message.audio}
                 className="w-full h-8"
-              // Custom styling for audio element can be tricky, native controls are safe for MVP
               />
             </div>
           )}
