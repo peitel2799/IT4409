@@ -19,9 +19,12 @@ export default function FriendsList({ type }) {
   }, [getAllContacts, getFriendRequests]);
 
   // Add online status to contacts based on onlineUsers array
-  const contactsWithStatus = (allContacts || []).map(contact => ({
+  // Use Array.isArray to guard against API returning error objects
+  const safeContacts = Array.isArray(allContacts) ? allContacts : [];
+  const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
+  const contactsWithStatus = safeContacts.map(contact => ({
     ...contact,
-    status: onlineUsers.includes(contact._id) ? 'online' : 'offline'
+    status: safeOnlineUsers.includes(contact._id) ? 'online' : 'offline'
   }));
 
   // Filter data based on 'type' prop
@@ -29,7 +32,7 @@ export default function FriendsList({ type }) {
     let rawData = [];
     switch (type) {
       case "requests":
-        rawData = friendRequests || [];
+        rawData = Array.isArray(friendRequests) ? friendRequests : [];
         break;
       case "online":
         rawData = contactsWithStatus.filter(c => c.status === 'online');

@@ -8,7 +8,10 @@ export default function RightSidebar({ onStartChat }) {
   const { onlineUsers } = useSocket();
 
   // Filter online friends using onlineUsers array
-  const onlineFriends = (allContacts || []).filter(c => onlineUsers.includes(c._id));
+  // Use Array.isArray to guard against API returning error objects
+  const safeContacts = Array.isArray(allContacts) ? allContacts : [];
+  const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
+  const onlineFriends = safeContacts.filter(c => safeOnlineUsers.includes(c._id));
 
   // Get avatar with fallback
   const getAvatar = (user) =>
@@ -57,7 +60,7 @@ export default function RightSidebar({ onStartChat }) {
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-100 p-5 overflow-y-auto">
       {/* Requests Section */}
-      {friendRequests?.length > 0 && (
+      {Array.isArray(friendRequests) && friendRequests.length > 0 && (
         <div className="mb-5 pb-5 border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-700 uppercase">Requests</h3>

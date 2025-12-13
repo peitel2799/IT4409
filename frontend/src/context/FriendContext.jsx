@@ -38,7 +38,8 @@ export const FriendProvider = ({ children }) => {
     const getFriendRequests = useCallback(async () => {
         try {
             const res = await axiosInstance.get("/friends/requests");
-            setFriendRequests(res.data);
+            // Ensure we always set an array, even if API returns unexpected data
+            setFriendRequests(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             toast.error(
                 error.response?.data?.message || "Failed to load friend requests"
@@ -49,7 +50,8 @@ export const FriendProvider = ({ children }) => {
     const getSentRequests = useCallback(async () => {
         try {
             const res = await axiosInstance.get("/friends/requests/sent");
-            setSentRequests(res.data);
+            // Ensure we always set an array, even if API returns unexpected data
+            setSentRequests(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error("Failed to load sent requests", error);
             toast.error(

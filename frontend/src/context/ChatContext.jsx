@@ -41,7 +41,8 @@ export const ChatProvider = ({ children }) => {
     setIsUsersLoading(true);
     try {
       const res = await axiosInstance.get("/messages/contacts");
-      setAllContacts(res.data);
+      // Ensure we always set an array, even if API returns unexpected data
+      setAllContacts(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -200,7 +201,7 @@ export const ChatProvider = ({ children }) => {
       });
 
       return () => {
-        socket.off("receiveMessage");
+        socket.off("newMessage");
 
         socket.off("messagesRead");
       };
