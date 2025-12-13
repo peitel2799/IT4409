@@ -25,7 +25,8 @@ export const FriendProvider = ({ children }) => {
     const getFriends = useCallback(async () => {
         try {
             const res = await axiosInstance.get("/friends/list");
-            setFriends(res.data);
+            // Ensure we always set an array, even if API returns unexpected data
+            setFriends(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             toast.error(
                 error.response?.data?.message ||

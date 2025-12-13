@@ -76,7 +76,8 @@ export const ChatProvider = ({ children }) => {
     try {
       // Fetch chat partners from the backend
       const res = await axiosInstance.get("/messages/chats");
-      const chatPartners = res.data || [];
+      // Ensure we always have an array, even if API returns unexpected data
+      const chatPartners = Array.isArray(res.data) ? res.data : [];
 
       // Transform chat partners into the format expected by ConversationSidebar
       const chats = chatPartners.map((partner) => {
@@ -115,7 +116,8 @@ export const ChatProvider = ({ children }) => {
       }
       try {
         const res = await axiosInstance.get(`/messages/${userId}`);
-        setMessages(res.data);
+        // Ensure we always set an array, even if API returns unexpected data
+        setMessages(Array.isArray(res.data) ? res.data : []);
 
         // Mark all received messages as read when opening chat
         if (socket) {

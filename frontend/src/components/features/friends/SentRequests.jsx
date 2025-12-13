@@ -6,7 +6,7 @@ import { useFriend } from "../../../context/FriendContext";
 export default function SentRequests() {
     // Get searchQuery, viewMode from Dashboard via Outlet Context
     const { searchQuery, viewMode } = useOutletContext();
-    const { sentRequests, getSentRequests, cancelFriendRequest, isFriendActionLoading } = useFriend();
+    const { sentRequests, getSentRequests, cancelFriendRequest } = useFriend();
     const [cancelingId, setCancelingId] = useState(null);
 
     useEffect(() => {
@@ -24,7 +24,9 @@ export default function SentRequests() {
         }
     };
 
-    const filteredList = (sentRequests || []).filter(req =>
+    // Use Array.isArray to guard against API returning error objects
+    const safeSentRequests = Array.isArray(sentRequests) ? sentRequests : [];
+    const filteredList = safeSentRequests.filter(req =>
         req.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         req.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
