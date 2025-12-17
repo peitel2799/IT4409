@@ -1,13 +1,13 @@
+import { uploadOnCloudinary } from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 import {
   getAllContactsService,
-  getMessagesByUserIdService,
-  sendMessageService,
   getChatPartnersService,
+  getMessagesByUserIdService,
   markMessagesAsReadService,
   markSingleMessageAsReadService,
+  sendMessageService,
 } from "../services/message.service.js";
-
 export const getAllContacts = async (req, res) => {
   try {
     const contacts = await getAllContactsService(req.user._id);
@@ -33,11 +33,16 @@ export const getMessagesByUserId = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
-    const newMessage = await sendMessageService(senderId, receiverId, text, image);
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await uploadOnCloudinary(req.file.path);
+    }
+
+    const newMessage = await sendMessageService(senderId, receiverId, text, imageUrl);
 
     // Emit socket event
     const receiverSocketId = getReceiverSocketId(receiverId);

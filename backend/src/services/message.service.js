@@ -1,4 +1,3 @@
-import cloudinary from "../lib/cloudinary.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { AppError } from "./AppError.js";
@@ -31,8 +30,8 @@ export const getMessagesByUserIdService = async (myId, userToChatId) => {
  * Send a message via REST API (with image upload)
  * Note: Self-messages are allowed for "My Cloud" feature (personal notes/files)
  */
-export const sendMessageService = async (senderId, receiverId, text, image) => {
-    if (!text && !image) {
+export const sendMessageService = async (senderId, receiverId, text, imageUrl) => {
+    if (!text && !imageUrl) {
         throw new AppError("Text or image is required", 400);
     }
 
@@ -41,19 +40,12 @@ export const sendMessageService = async (senderId, receiverId, text, image) => {
         throw new AppError("Receiver not found", 404);
     }
 
-    let imageUrl;
-    if (image) {
-        const uploadResponse = await cloudinary.uploader.upload(image);
-        imageUrl = uploadResponse.secure_url;
-    }
-
     const newMessage = new Message({
         senderId,
         receiverId,
         text,
         image: imageUrl,
     });
-
     await newMessage.save();
     return newMessage;
 };
