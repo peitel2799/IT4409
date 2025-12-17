@@ -1,4 +1,4 @@
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketIds, io } from "../lib/socket.js";
 import {
   getAllContactsService,
   getMessagesByUserIdService,
@@ -7,6 +7,14 @@ import {
   markMessagesAsReadService,
   markSingleMessageAsReadService,
 } from "../services/message.service.js";
+
+// Helper to emit to all sockets of a user
+function emitToUser(userId, event, data) {
+  const socketIds = getReceiverSocketIds(userId);
+  socketIds.forEach(socketId => {
+    io.to(socketId).emit(event, data);
+  });
+}
 
 export const getAllContacts = async (req, res) => {
   try {
@@ -39,11 +47,8 @@ export const sendMessage = async (req, res) => {
 
     const newMessage = await sendMessageService(senderId, receiverId, text, image);
 
-    // Emit socket event
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    // Emit socket event to all receiver sockets
+    emitToUser(receiverId, "newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -69,13 +74,10 @@ export const markAsRead = async (req, res) => {
 
     const result = await markMessagesAsReadService(myUserId, partnerId);
 
-    // Emit socket event
-    const senderSocketId = getReceiverSocketId(partnerId);
-    if (senderSocketId) {
-      io.to(senderSocketId).emit("messagesRead", {
-        partnerId: result.myUserId,
-      });
-    }
+    // Emit socket event to all partner sockets
+    emitToUser(partnerId, "messagesRead", {
+      partnerId: result.myUserId,
+    });
 
     res.status(200).json({
       message: "Messages marked as read",
@@ -93,14 +95,11 @@ export const markMessageAsRead = async (req, res) => {
 
     const message = await markSingleMessageAsReadService(messageId);
 
-    // Emit socket event
-    const senderSocketId = getReceiverSocketId(message.senderId);
-    if (senderSocketId) {
-      io.to(senderSocketId).emit("messageRead", {
-        messageId: messageId,
-        readBy: req.user._id,
-      });
-    }
+    // Emit socket event to all sender sockets
+    emitToUser(message.senderId, "messageRead", {
+      messageId: messageId,
+      readBy: req.user._id,
+    });
 
     res.status(200).json(message);
   } catch (error) {

@@ -4,7 +4,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import ChatPage from "./pages/ChatPage";
-import CallPage from "./pages/CallPage";
+import CallPageWrapper from "./pages/CallPageWrapper";
 import ForgotPasswordPage from "./pages/ForgetPasswordPage";
 import HomeDashboard from "./components/features/home/HomeDashboard";
 import CallsDashboard from "./components/features/calls/CallsDashboard";
@@ -42,7 +42,7 @@ function App() {
 
         <Route
           path="/call-window"
-          element={authUser ? <CallPage /> : <Navigate to="/login" />}
+          element={<CallPageWrapper />}
         />
         <Route path="/chat" element={authUser ? <ChatPage /> : <Navigate to="/login" />} >
           {/* Mặc định vào /chat sẽ chuyển hướng sang /chat/home */}

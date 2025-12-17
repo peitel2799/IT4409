@@ -1,4 +1,4 @@
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketIds, io } from "../lib/socket.js";
 import {
     sendFriendRequestService,
     acceptFriendRequestService,
@@ -11,6 +11,14 @@ import {
     searchUsersService,
 } from "../services/friend.service.js";
 
+// Helper to emit to all sockets of a user
+function emitToUser(userId, event, data) {
+  const socketIds = getReceiverSocketIds(userId);
+  socketIds.forEach(socketId => {
+    io.to(socketId).emit(event, data);
+  });
+}
+
 export const sendFriendRequest = async (req, res) => {
     try {
         const senderId = req.user._id;
@@ -18,11 +26,8 @@ export const sendFriendRequest = async (req, res) => {
 
         const result = await sendFriendRequestService(senderId, receiverId);
 
-        // Emit socket event
-        const receiverSocketId = getReceiverSocketId(receiverId);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit("friendRequestReceived", { from: senderId });
-        }
+        // Emit socket event to all receiver sockets
+        emitToUser(receiverId, "friendRequestReceived", { from: senderId });
 
         res.json({ message: "Friend request sent" });
     } catch (error) {
@@ -38,11 +43,8 @@ export const acceptFriendRequest = async (req, res) => {
 
         await acceptFriendRequestService(receiverId, senderId);
 
-        // Emit socket event
-        const senderSocketId = getReceiverSocketId(senderId);
-        if (senderSocketId) {
-            io.to(senderSocketId).emit("friendRequestAccepted", { by: receiverId });
-        }
+        // Emit socket event to all sender sockets
+        emitToUser(senderId, "friendRequestAccepted", { by: receiverId });
 
         res.json({ message: "Friend request accepted" });
     } catch (error) {

@@ -3,9 +3,11 @@ import { useAuth } from "../context/AuthContext";
 import { SocketProvider } from "../context/SocketContext";
 import { FriendProvider } from "../context/FriendContext";
 import { ChatProvider } from "../context/ChatContext";
+import { CallProvider } from "../context/CallContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { LoaderIcon } from "lucide-react";
 import NavigationSidebar from "../components/features/NavigationSidebar";
+import IncomingCallModal from "../components/IncomingCallModal";
 
 // Content component separated from Providers
 const ChatPageContent = () => {
@@ -38,6 +40,9 @@ const ChatPageContent = () => {
           <Outlet />
         </div>
       </div>
+      
+      {/* Incoming Call Modal - shown when receiving a call */}
+      <IncomingCallModal />
     </div>
   );
 };
@@ -55,12 +60,14 @@ export default function ChatPage() {
   }
 
   // Wrap with all providers in proper order:
-  // SocketProvider -> FriendProvider -> ChatProvider
+  // SocketProvider -> FriendProvider -> ChatProvider -> CallProvider
   return (
     <SocketProvider>
       <FriendProvider>
         <ChatProvider>
-          <ChatPageContent />
+          <CallProvider>
+            <ChatPageContent />
+          </CallProvider>
         </ChatProvider>
       </FriendProvider>
     </SocketProvider>
