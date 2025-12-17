@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, ArrowLeftRight, User, LoaderIcon } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ArrowLeftRight, User, LoaderIcon, VideoIcon } from "lucide-react";
 import { useCall } from "../context/CallContext";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
@@ -28,6 +28,7 @@ export default function CallPage() {
     toggleMic,
     toggleCamera,
     getUserMedia,
+    hasVideo,
   } = useCall();
 
   // --- State ---
@@ -38,11 +39,16 @@ export default function CallPage() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [callInitiated, setCallInitiated] = useState(false);
   const [initAttempts, setInitAttempts] = useState(0);
+  
+  // Track if remote has video
+  const [remoteHasVideo, setRemoteHasVideo] = useState(false);
 
   // --- Refs ---
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const durationIntervalRef = useRef(null);
+  const initializingRef = useRef(false); // Prevent multiple initializations
+  const callerMediaReadyRef = useRef(false); // Prevent caller from getting media twice
 
   // --- Debug: Log socket state on mount ---
   useEffect(() => {
@@ -63,9 +69,24 @@ export default function CallPage() {
 
   // --- Initialize call when socket is connected ---
   useEffect(() => {
-    if (hasInitialized || callInitiated) return;
+    // Use sessionStorage to prevent multiple initializations across StrictMode remounts
+    const sessionKey = `call_initialized_${callIdParam || recipientId}`;
+    const alreadyInitialized = sessionStorage.getItem(sessionKey);
+    
+    if (alreadyInitialized || initializingRef.current || hasInitialized) {
+      console.log("=== SKIPPING INIT (already initialized) ===", {
+        sessionStorage: alreadyInitialized,
+        ref: initializingRef.current,
+        state: hasInitialized
+      });
+      return;
+    }
     if (isCheckingAuth || !authUser) return; // Wait for auth check
     if (!isConnected) return; // Wait for socket connection
+
+    // Mark as initializing immediately to prevent race conditions
+    initializingRef.current = true;
+    sessionStorage.setItem(sessionKey, 'true');
 
     const initCall = async () => {
       console.log("=== INITIALIZING CALL WINDOW ===");
@@ -101,6 +122,14 @@ export default function CallPage() {
       } else if (isCaller && recipientId) {
         // This is the caller window - call:initiate was already emitted from main window
         // Just need to get media and wait for call events
+        
+        // Skip if caller already got media (socket reconnect scenario)
+        if (callerMediaReadyRef.current) {
+          console.log("=== CALLER FLOW SKIPPED (already has media) ===");
+          return;
+        }
+        callerMediaReadyRef.current = true;
+        
         console.log("=== CALLER FLOW ===");
         console.log("Getting media...");
         
@@ -125,6 +154,7 @@ export default function CallPage() {
           setHasInitialized(true);
         } else {
           console.log("Call initiation failed, will retry...");
+          initializingRef.current = false; // Allow retry
           setInitAttempts(prev => prev + 1);
         }
       }
@@ -133,7 +163,6 @@ export default function CallPage() {
     initCall();
   }, [
     hasInitialized,
-    callInitiated,
     isReceiver,
     isCaller,
     callIdParam,
@@ -142,6 +171,7 @@ export default function CallPage() {
     avatar,
     isVideoCall,
     initiateCall,
+    acceptCall,
     getUserMedia,
     isCheckingAuth,
     authUser,
@@ -155,6 +185,7 @@ export default function CallPage() {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
       console.log("Local stream attached to video element");
+      console.log("Local video tracks:", localStream.getVideoTracks().length);
     }
   }, [localStream]);
 
@@ -163,18 +194,18 @@ export default function CallPage() {
     console.log("=== Remote stream effect ===");
     console.log("Remote stream:", remoteStream?.id);
     console.log("Remote stream tracks:", remoteStream?.getTracks().map(t => ({kind: t.kind, enabled: t.enabled, muted: t.muted})));
-    console.log("Video ref:", !!remoteVideoRef.current);
-    console.log("Audio ref:", !!remoteAudioRef.current);
+    
+    if (remoteStream) {
+      // Check if remote has video tracks
+      const videoTracks = remoteStream.getVideoTracks();
+      const hasVideoTrack = videoTracks.length > 0 && videoTracks.some(t => t.enabled);
+      setRemoteHasVideo(hasVideoTrack);
+      console.log("Remote has video:", hasVideoTrack);
+    }
     
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
       console.log("Remote stream attached to video element");
-    }
-    if (remoteAudioRef.current && remoteStream) {
-      remoteAudioRef.current.srcObject = remoteStream;
-      console.log("Remote stream attached to audio element");
-      // Try to play
-      remoteAudioRef.current.play().catch(e => console.warn("Audio play failed:", e.message));
     }
   }, [remoteStream]);
 
@@ -220,10 +251,26 @@ export default function CallPage() {
     }
   }, [callState.callStatus, callInitiated, hasInitialized, callEventReceived]);
 
-  // --- Handle unavailable/busy status ---
+  // --- Cleanup sessionStorage on window close ---
+  useEffect(() => {
+    const sessionKey = `call_initialized_${callIdParam || recipientId}`;
+    
+    const handleBeforeUnload = () => {
+      sessionStorage.removeItem(sessionKey);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      sessionStorage.removeItem(sessionKey);
+    };
+  }, [callIdParam, recipientId]);
+
+  // --- Handle unavailable/busy/rejected status ---
   useEffect(() => {
     // Only close if call was actually initiated
-    if ((callState.callStatus === "unavailable" || callState.callStatus === "busy") && callInitiated) {
+    if ((callState.callStatus === "unavailable" || callState.callStatus === "busy" || callState.callStatus === "rejected") && callInitiated) {
+      console.log("Call status:", callState.callStatus, "- closing window in 2 seconds");
       setTimeout(() => {
         window.close();
       }, 2000);
@@ -247,6 +294,10 @@ export default function CallPage() {
 
   // --- End call ---
   const handleEndCall = () => {
+    // Clear sessionStorage to allow new calls
+    const sessionKey = `call_initialized_${callIdParam || recipientId}`;
+    sessionStorage.removeItem(sessionKey);
+    
     const targetId = recipientId || callState.remoteUser?.id;
     const currentCallId = callState.callId || callIdParam;
     endCall(targetId, currentCallId);
@@ -328,30 +379,37 @@ export default function CallPage() {
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className={`w-full h-full object-cover ${isSwapped ? "rounded-xl" : ""} ${!remoteStream ? "hidden" : ""}`}
+          className={`w-full h-full object-cover ${isSwapped ? "rounded-xl" : ""} ${(!remoteStream || !remoteHasVideo) ? "hidden" : ""}`}
         />
-        {/* Show placeholder when no remote stream */}
-        {!remoteStream && (
-          <div className={`w-full h-full flex flex-col items-center justify-center bg-gray-800 ${isSwapped ? "rounded-xl" : ""}`}>
+        {/* Show placeholder when no remote stream OR no video (audio-only call) */}
+        {(!remoteStream || !remoteHasVideo) && (
+          <div className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-800 to-gray-900 ${isSwapped ? "rounded-xl" : ""}`}>
             {remoteAvatarUrl ? (
               <img
                 src={remoteAvatarUrl}
                 alt={remoteName}
-                className="w-32 h-32 rounded-full object-cover border-4 border-gray-700"
+                className="w-32 h-32 rounded-full object-cover border-4 border-gray-700 shadow-xl"
               />
             ) : (
-              <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600">
+              <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600 shadow-xl">
                 <User size={48} className="text-gray-400" />
               </div>
             )}
             {!isSwapped && (
-              <p className="mt-4 text-gray-400 text-lg">{getStatusText()}</p>
+              <>
+                <p className="mt-4 text-gray-400 text-lg">{getStatusText()}</p>
+                {remoteStream && !remoteHasVideo && (
+                  <p className="mt-2 text-gray-500 text-sm flex items-center gap-1">
+                    <VideoOff size={14} /> Audio only
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
         {!isSwapped && (
-          <div className="absolute top-5 left-5">
-            <h2 className="text-2xl font-bold">{remoteName}</h2>
+          <div className="absolute top-5 left-5 z-10">
+            <h2 className="text-2xl font-bold drop-shadow-lg">{remoteName}</h2>
             <p className={`text-sm ${callState.callStatus === "connected" ? "text-green-400" : "text-yellow-400"}`}>
               {getStatusText()}
             </p>
@@ -364,16 +422,16 @@ export default function CallPage() {
         className={isSwapped ? fullScreen : smallScreen}
         onClick={() => !isSwapped && setIsSwapped(true)}
       >
-        {/* Always render video element but hide when camera is off */}
+        {/* Always render video element but hide when camera is off or no video track */}
         <video
           ref={localVideoRef}
           autoPlay
           muted
           playsInline
-          className={`w-full h-full object-cover ${!isSwapped ? "rounded-xl" : ""} transform scale-x-[-1] ${!localStream || !isCamOn ? "hidden" : ""}`}
+          className={`w-full h-full object-cover ${!isSwapped ? "rounded-xl" : ""} transform scale-x-[-1] ${(!localStream || !hasVideo || !isCamOn) ? "hidden" : ""}`}
         />
-        {/* Show placeholder when camera is off or no stream */}
-        {(!localStream || !isCamOn) && (
+        {/* Show placeholder when camera is off or no video stream */}
+        {(!localStream || !hasVideo || !isCamOn) && (
           <div className={`w-full h-full flex items-center justify-center bg-gray-700 ${!isSwapped ? "rounded-xl" : ""}`}>
             {authUser?.profilePic ? (
               <img
@@ -391,12 +449,13 @@ export default function CallPage() {
         </div>
       </div>
 
-      {/* --- Status overlay for unavailable/busy --- */}
-      {(callState.callStatus === "unavailable" || callState.callStatus === "busy") && (
+      {/* --- Status overlay for unavailable/busy/rejected --- */}
+      {(callState.callStatus === "unavailable" || callState.callStatus === "busy" || callState.callStatus === "rejected") && (
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-30">
           <div className="text-center">
             <p className="text-2xl font-bold text-red-400">
-              {callState.callStatus === "unavailable" ? "User is Offline" : "User is Busy"}
+              {callState.callStatus === "unavailable" ? "User is Offline" : 
+               callState.callStatus === "busy" ? "User is Busy" : "Call Declined"}
             </p>
             <p className="text-gray-400 mt-2">Closing window...</p>
           </div>

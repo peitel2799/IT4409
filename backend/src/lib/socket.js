@@ -3,6 +3,7 @@ import http from "http";
 import express from "express";
 import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
+import Call from "../models/Call.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -55,8 +56,40 @@ function getOnlineUserIds() {
   return Object.keys(userSocketsMap).filter(userId => userSocketsMap[userId].size > 0);
 }
 
-// Store active calls {callId: {callerId, receiverId, status}}
+// Store active calls {callId: {callerId, receiverId, status, isVideo, startTime, answeredAt}}
 const activeCalls = {};
+
+// Helper function to save call record to database
+async function saveCallRecord(callId, status) {
+  const call = activeCalls[callId];
+  if (!call) {
+    console.log("No active call found for callId:", callId);
+    return;
+  }
+
+  try {
+    const endTime = Date.now();
+    const duration = call.answeredAt 
+      ? Math.round((endTime - call.answeredAt) / 1000) 
+      : 0;
+
+    const callRecord = new Call({
+      callId,
+      caller: call.callerId,
+      receiver: call.receiverId,
+      callType: call.isVideo ? "video" : "audio",
+      status,
+      duration,
+      startedAt: call.answeredAt ? new Date(call.answeredAt) : null,
+      endedAt: status === "answered" ? new Date(endTime) : null,
+    });
+
+    await callRecord.save();
+    console.log("Call record saved:", callId, "status:", status, "duration:", duration);
+  } catch (error) {
+    console.error("Error saving call record:", error);
+  }
+}
 
 io.on("connection", (socket) => {
   console.log("A user connected", socket.user.fullName);
@@ -109,8 +142,9 @@ io.on("connection", (socket) => {
       emitToUser(userId, "call:ringing", { callId, receiverId });
       console.log("call:ringing emitted to caller");
     } else {
-      // Receiver is offline
+      // Receiver is offline - save call record as unavailable
       console.log("Receiver is offline");
+      saveCallRecord(callId, "unavailable");
       socket.emit("call:unavailable", { 
         receiverId, 
         reason: "User is offline" 
@@ -129,10 +163,11 @@ io.on("connection", (socket) => {
     
     if (activeCalls[callId]) {
       activeCalls[callId].status = "connected";
+      activeCalls[callId].answeredAt = Date.now(); // Track when call was answered
     }
 
-    // Emit to all caller sockets
-    emitToUser(callerId, "call:accepted", {
+    // Emit to ONE caller socket only (the call window) to prevent duplicate handling
+    emitToOneSocket(callerId, "call:accepted", {
       callId,
       receiverId: userId,
       receiverInfo
@@ -140,7 +175,10 @@ io.on("connection", (socket) => {
   });
 
   // Handle call rejection
-  socket.on("call:reject", ({ callId, callerId, reason }) => {
+  socket.on("call:reject", async ({ callId, callerId, reason }) => {
+    // Save call record as rejected
+    await saveCallRecord(callId, "rejected");
+    
     if (activeCalls[callId]) {
       delete activeCalls[callId];
     }
@@ -154,8 +192,12 @@ io.on("connection", (socket) => {
   });
 
   // Handle call end
-  socket.on("call:end", ({ callId, recipientId }) => {
-    if (activeCalls[callId]) {
+  socket.on("call:end", async ({ callId, recipientId }) => {
+    // Save call record - if it was answered (has answeredAt), save as answered, else as missed
+    const call = activeCalls[callId];
+    if (call) {
+      const status = call.answeredAt ? "answered" : "missed";
+      await saveCallRecord(callId, status);
       delete activeCalls[callId];
     }
 
@@ -196,7 +238,10 @@ io.on("connection", (socket) => {
   });
 
   // Handle call busy (user already in a call)
-  socket.on("call:busy", ({ callId, callerId }) => {
+  socket.on("call:busy", async ({ callId, callerId }) => {
+    // Save call record as busy
+    await saveCallRecord(callId, "busy");
+    
     if (activeCalls[callId]) {
       delete activeCalls[callId];
     }
@@ -210,7 +255,7 @@ io.on("connection", (socket) => {
   // ==================== End WebRTC Signaling Events ====================
 
   // with socket.on we listen for events from clients
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("A user disconnected", socket.user.fullName);
     
     // Remove this socket from user's socket set
@@ -221,10 +266,15 @@ io.on("connection", (socket) => {
       // Only clean up if user has no more sockets (completely offline)
       if (userSocketsMap[userId].size === 0) {
         // End any active calls involving this user
-        Object.keys(activeCalls).forEach(callId => {
+        for (const callId of Object.keys(activeCalls)) {
           const call = activeCalls[callId];
           if (call.callerId === userId || call.receiverId === userId) {
             const otherUserId = call.callerId === userId ? call.receiverId : call.callerId;
+            
+            // Save call record
+            const status = call.answeredAt ? "answered" : "missed";
+            await saveCallRecord(callId, status);
+            
             emitToUser(otherUserId, "call:ended", {
               callId,
               endedBy: userId,
@@ -232,7 +282,7 @@ io.on("connection", (socket) => {
             });
             delete activeCalls[callId];
           }
-        });
+        }
         
         delete userSocketsMap[userId];
       }

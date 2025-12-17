@@ -48,6 +48,8 @@ export const CallProvider = ({ children }) => {
   const socketRef = useRef(null);
   const pendingCallerRef = useRef(null); // Store caller info while waiting for offer
   const answerProcessedRef = useRef(false); // Flag to prevent duplicate answer processing
+  const callAcceptedRef = useRef(false); // Flag to prevent duplicate call:accept emissions
+  const callAcceptedProcessedRef = useRef(false); // Flag to prevent duplicate call:accepted handling (caller side)
 
   // Keep socket ref updated
   useEffect(() => {
@@ -56,36 +58,116 @@ export const CallProvider = ({ children }) => {
 
   // Incoming call info (for showing incoming call modal)
   const [incomingCall, setIncomingCall] = useState(null);
+  
+  // Track if current stream has video
+  const [hasVideo, setHasVideo] = useState(false);
 
   // Get user media with fallback
   const getUserMedia = useCallback(async (isVideo = true) => {
+    // If we already have a stream, check if it matches the request
+    if (localStreamRef.current) {
+      const currentHasVideo = localStreamRef.current.getVideoTracks().length > 0;
+      
+      // If requesting video but current stream doesn't have it, try to get new stream
+      if (isVideo && !currentHasVideo) {
+        console.log("Current stream has no video, trying to get video stream...");
+        // Stop current stream first
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+        setLocalStream(null);
+      } else {
+        console.log("Returning existing stream:", localStreamRef.current.id, "hasVideo:", currentHasVideo);
+        return localStreamRef.current;
+      }
+    }
+    
+    // Audio constraints
+    const audioConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    };
+    
+    // Video constraints - try multiple levels
+    const videoConstraintsHigh = {
+      width: { ideal: 1280, max: 1920 },
+      height: { ideal: 720, max: 1080 },
+      frameRate: { ideal: 30, max: 60 },
+      facingMode: "user"
+    };
+    
+    const videoConstraintsBasic = {
+      width: { ideal: 640 },
+      height: { ideal: 480 },
+      facingMode: "user"
+    };
+    
     // First, try to get both video and audio
     if (isVideo) {
+      // Try high quality video first
       try {
+        console.log("Trying high quality video...");
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
+          video: videoConstraintsHigh,
+          audio: audioConstraints,
         });
-        console.log("Got video + audio stream");
+        console.log("Got HIGH quality video + audio stream:", stream.id);
+        console.log("Video tracks:", stream.getVideoTracks().length);
+        console.log("Audio tracks:", stream.getAudioTracks().length);
         setLocalStream(stream);
+        setHasVideo(true);
         localStreamRef.current = stream;
         return stream;
       } catch (error) {
-        console.warn("Could not get video, trying audio only:", error.message);
-        // Fallback to audio only
+        console.warn("High quality video failed:", error.message);
+        
+        // Try basic video constraints
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({
-            video: false,
-            audio: true,
+          console.log("Trying basic video constraints...");
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: videoConstraintsBasic,
+            audio: audioConstraints,
           });
-          console.log("Got audio-only stream (video fallback)");
-          setLocalStream(audioStream);
-          localStreamRef.current = audioStream;
-          return audioStream;
-        } catch (audioError) {
-          console.error("Could not get audio either:", audioError.message);
-          // Return null stream - call can still proceed without local media
-          return null;
+          console.log("Got BASIC video + audio stream:", stream.id);
+          console.log("Video tracks:", stream.getVideoTracks().length);
+          setLocalStream(stream);
+          setHasVideo(true);
+          localStreamRef.current = stream;
+          return stream;
+        } catch (error2) {
+          console.warn("Basic video failed:", error2.message);
+          
+          // Try simplest video: true
+          try {
+            console.log("Trying simplest video: true...");
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: audioConstraints,
+            });
+            console.log("Got SIMPLE video + audio stream:", stream.id);
+            console.log("Video tracks:", stream.getVideoTracks().length);
+            setLocalStream(stream);
+            setHasVideo(true);
+            localStreamRef.current = stream;
+            return stream;
+          } catch (error3) {
+            console.warn("All video attempts failed, trying audio only:", error3.message);
+            // Fallback to audio only
+            try {
+              const audioStream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: audioConstraints,
+              });
+              console.log("Got audio-only stream (video fallback):", audioStream.id);
+              setLocalStream(audioStream);
+              setHasVideo(false);
+              localStreamRef.current = audioStream;
+              return audioStream;
+            } catch (audioError) {
+              console.error("Could not get audio either:", audioError.message);
+              return null;
+            }
+          }
         }
       }
     } else {
@@ -93,10 +175,11 @@ export const CallProvider = ({ children }) => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: false,
-          audio: true,
+          audio: audioConstraints,
         });
-        console.log("Got audio-only stream");
+        console.log("Got audio-only stream:", stream.id);
         setLocalStream(stream);
+        setHasVideo(false);
         localStreamRef.current = stream;
         return stream;
       } catch (error) {
@@ -259,6 +342,13 @@ export const CallProvider = ({ children }) => {
       console.log("CallerId:", callerId);
       console.log("IsVideo:", isVideo);
       
+      // Prevent duplicate call:accept emissions
+      if (callAcceptedRef.current) {
+        console.log("call:accept already emitted, skipping duplicate");
+        return;
+      }
+      callAcceptedRef.current = true;
+      
       // Wait for socket to be available (max 5 seconds)
       let waitTime = 0;
       const maxWait = 5000;
@@ -277,6 +367,7 @@ export const CallProvider = ({ children }) => {
       
       if (!currentSocket || !authUser) {
         console.error("Cannot accept call - socket or authUser missing after waiting");
+        callAcceptedRef.current = false; // Reset on failure
         return;
       }
 
@@ -364,6 +455,7 @@ export const CallProvider = ({ children }) => {
       // Stop local stream
       stopStream(localStreamRef.current);
       setLocalStream(null);
+      setHasVideo(false);
       localStreamRef.current = null;
 
       // Reset state
@@ -372,6 +464,8 @@ export const CallProvider = ({ children }) => {
       pendingCandidatesRef.current = [];
       pendingCallerRef.current = null;
       answerProcessedRef.current = false; // Reset answer flag
+      callAcceptedRef.current = false; // Reset call accepted flag
+      callAcceptedProcessedRef.current = false; // Reset call accepted processed flag
 
       setCallState({
         isInCall: false,
@@ -480,6 +574,13 @@ export const CallProvider = ({ children }) => {
       console.log("ReceiverInfo:", receiverInfo);
       console.log("LocalStream:", localStreamRef.current?.id);
 
+      // Prevent duplicate handling
+      if (callAcceptedProcessedRef.current) {
+        console.log("call:accepted already processed, skipping");
+        return;
+      }
+      callAcceptedProcessedRef.current = true;
+
       setCallState((prev) => ({
         ...prev,
         isRinging: false,
@@ -531,7 +632,17 @@ export const CallProvider = ({ children }) => {
     // Call rejected
     const handleCallRejected = ({ callId, receiverId, reason }) => {
       console.log("Call rejected:", reason);
-      endCall(receiverId, callId);
+      
+      // Set status to rejected first (so UI can show message)
+      setCallState(prev => ({
+        ...prev,
+        callStatus: "rejected",
+      }));
+      
+      // Then cleanup after a short delay
+      setTimeout(() => {
+        endCall(receiverId, callId);
+      }, 100);
     };
 
     // Call ended
@@ -743,6 +854,7 @@ export const CallProvider = ({ children }) => {
     remoteStream,
     incomingCall,
     setIncomingCall,
+    hasVideo,
 
     // Actions
     initiateCall,
