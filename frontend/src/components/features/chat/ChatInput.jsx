@@ -1,10 +1,12 @@
-import { Send, Smile, Paperclip } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
+import { Paperclip, Send, Smile } from "lucide-react";
 import { useState } from "react";
 import { useChat } from "../../../context/ChatContext";
 
 export default function ChatInput({ chat }) {
   const [text, setText] = useState("");
   const { sendMessage } = useChat();
+  const [isEmojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -14,7 +16,21 @@ export default function ChatInput({ chat }) {
   };
 
   return (
-    <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100">
+    <div className="relative">
+      {isEmojiPickerOpen && (
+        <div className="absolute bottom-full right-20 mb-2 z-10">
+          <EmojiPicker
+            open={isEmojiPickerOpen}
+            onEmojiClick={(emoji) => {
+              setText(prev => prev + emoji.emoji);
+              setEmojiPickerOpen(false);
+            }}
+            className="custom-emoji-picker"
+            previewConfig={{showPreview: false}}
+          />
+        </div>
+      )}
+      <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100">
       <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-2 rounded-[24px] focus-within:bg-white focus-within:ring-2 focus-within:ring-pink-100 focus-within:border-pink-300 transition-all shadow-sm">
         <button type="button" className="p-2 text-gray-400 hover:text-pink-500 transition-colors">
           <Paperclip size={20} />
@@ -28,7 +44,7 @@ export default function ChatInput({ chat }) {
           className="flex-1 bg-transparent px-2 py-2 text-sm focus:outline-none text-gray-700 placeholder:text-gray-400"
         />
 
-        <button type="button" className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+        <button type="button" onClick={() => setEmojiPickerOpen(!isEmojiPickerOpen)} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
           <Smile size={20} />
         </button>
 
@@ -42,5 +58,6 @@ export default function ChatInput({ chat }) {
         </button>
       </div>
     </form>
+  </div>
   );
 }

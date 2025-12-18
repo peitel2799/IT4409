@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/peitel2799/IT4409#readme",
   "dependencies": {
+    "emoji-picker-react": "^4.16.1",
     "socket.io-client": "^4.8.1"
   }
 }
