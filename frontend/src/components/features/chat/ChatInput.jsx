@@ -54,6 +54,10 @@ export default function ChatInput({ chat }) {
       toast.error("Please select an image file");
       return;
     }
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
     setImageFile(file);
     const fileReader = new FileReader();
     fileReader.onloadend = () => {
