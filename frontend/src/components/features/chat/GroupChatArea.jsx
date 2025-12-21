@@ -53,7 +53,7 @@ export default function GroupChatArea({ onBack }) {
 
   if (!selectedGroup) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="flex-1 w-full flex items-center justify-center bg-gray-50">
         <div className="text-center text-gray-500">
           <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
           <p>Chọn một nhóm để bắt đầu trò chuyện</p>
@@ -119,7 +119,7 @@ export default function GroupChatArea({ onBack }) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b bg-white">
         <button
