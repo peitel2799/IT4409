@@ -4,7 +4,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import ChatPage from "./pages/ChatPage";
-import CallPage from "./pages/CallPage";
+import CallPageWrapper from "./pages/CallPageWrapper";
 import ForgotPasswordPage from "./pages/ForgetPasswordPage";
 import HomeDashboard from "./components/features/home/HomeDashboard";
 import CallsDashboard from "./components/features/calls/CallsDashboard";
@@ -15,6 +15,8 @@ import { useAuth } from "./context/AuthContext";
 import AuthLayout from './layouts/AuthLayout';
 import FriendsList from "./components/features/friends/FriendsList";
 import SentRequests from "./components/features/friends/SentRequests";
+import ProfileSettings from "./components/features/settings/ProfileSettings";
+import ChangePassword from "./components/features/settings/ChangePassword";
 function App() {
   const { authUser, isCheckingAuth } = useAuth();
 
@@ -42,7 +44,7 @@ function App() {
 
         <Route
           path="/call-window"
-          element={authUser ? <CallPage /> : <Navigate to="/login" />}
+          element={<CallPageWrapper />}
         />
         <Route path="/chat" element={authUser ? <ChatPage /> : <Navigate to="/login" />} >
           {/* Mặc định vào /chat sẽ chuyển hướng sang /chat/home */}
@@ -59,7 +61,13 @@ function App() {
             <Route path="sent" element={<SentRequests />} />
           </Route>
           <Route path="calls" element={<CallsDashboard />} />
-          <Route path="settings" element={<SettingsDashboard />} />
+          {/* [MODIFIED] Cấu hình Nested Route cho Settings */}
+          <Route path="settings" element={<SettingsDashboard />}>
+            {/* Mặc định vào settings sẽ chuyển ngay tới profile */}
+            <Route index element={<Navigate to="profile" replace />} />
+            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="password" element={<ChangePassword />} />
+          </Route>
         </Route>
       </Routes>
     </>

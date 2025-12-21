@@ -31,8 +31,8 @@ function PasswordInput({ label, name, value, onChange, placeholder, icon: Icon, 
 }
 
 export default function ChangePassword() {
-  const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
-  const [showPassword, setShowPassword] = useState(false);
+  const [passwords, setPasswords] = useState({ current: "", new:"", confirm:"" });
+  const [showPassword, setShowPassword] = useState({current: false, new: false, confirm: false,});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -71,19 +71,21 @@ export default function ChangePassword() {
     }
   };
 
-  const toggleShowPassword = () => setShowPassword(!showPassword);
+  const toggleShowPassword = (field) => {
+  setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
+};
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-8 py-6 border-b border-gray-100 bg-white">
+      <div className="px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-10">
         <h3 className="text-xl font-bold text-gray-900">Change Password</h3>
         <p className="text-sm text-gray-500 mt-1">Update your password to protect your account</p>
       </div>
 
       {/* Form */}
       <div className="flex-1 overflow-y-auto p-8">
-        <form onSubmit={handleSubmit} className="max-w-md space-y-6">
+        <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
           <PasswordInput
             label="Current Password"
             name="current"
@@ -91,8 +93,8 @@ export default function ChangePassword() {
             onChange={handleChange}
             placeholder="Enter current password"
             icon={Lock}
-            showPassword={showPassword}
-            onToggleShow={toggleShowPassword}
+            showPassword={showPassword.current}          
+            onToggleShow={() => toggleShowPassword("current")}
           />
           <PasswordInput
             label="New Password"
@@ -101,8 +103,8 @@ export default function ChangePassword() {
             onChange={handleChange}
             placeholder="Enter new password"
             icon={KeyRound}
-            showPassword={showPassword}
-            onToggleShow={toggleShowPassword}
+            showPassword={showPassword.new}
+            onToggleShow={() => toggleShowPassword("new")}
           />
           <PasswordInput
             label="Confirm Password"
@@ -111,16 +113,17 @@ export default function ChangePassword() {
             onChange={handleChange}
             placeholder="Re-enter new password"
             icon={Lock}
-            showPassword={showPassword}
-            onToggleShow={toggleShowPassword}
+            showPassword={showPassword.confirm}
+            onToggleShow={() => toggleShowPassword("confirm")}
           />
 
+
           {/* Submit button */}
-          <div className="pt-2">
+          <div className="pt-4">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-pink-500 text-white font-medium rounded-xl hover:bg-pink-600 disabled:opacity-70 transition w-full"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-pink-400 text-white font-medium rounded-xl hover:bg-pink-600 disabled:opacity-70 disabled:cursor-not-allowed transition shadow-sm w-full sm:w-auto ml-auto"
             >
               {isSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : <Lock className="w-4 h-4" />}
               {isSubmitting ? "Updating..." : "Update Password"}

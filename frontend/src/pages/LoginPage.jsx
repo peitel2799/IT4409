@@ -32,6 +32,12 @@ function LoginPage() {
     );
   }
 
+  //hàm xử lý thay đổi input
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
   return (
     <div className="w-full flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="md:w-1/2 p-8 flex items-center justify-center border-r border-gray-200">
@@ -48,11 +54,12 @@ function LoginPage() {
               <div className="relative">
                 <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
+                  name="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={handleChange} 
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
-                  placeholder="johndoe@gmail.com"
+                  placeholder="example@gmail.com"
                   required
                 />
               </div>
@@ -63,10 +70,11 @@ function LoginPage() {
               <div className="relative">
                 <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
+                  name="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D3D0FB]"
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
                   placeholder="Enter your password"
                   required
                 />

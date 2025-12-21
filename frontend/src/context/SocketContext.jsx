@@ -12,6 +12,7 @@ const SocketContext = createContext();
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
+    const [isConnected, setIsConnected] = useState(false);
     const { authUser } = useAuth();
 
     // Initialize socket connection when user is authenticated
@@ -25,6 +26,16 @@ export const SocketProvider = ({ children }) => {
                 transports: ["websocket", "polling"],
             });
 
+            newSocket.on("connect", () => {
+                console.log("Socket connected:", newSocket.id);
+                setIsConnected(true);
+            });
+
+            newSocket.on("disconnect", () => {
+                console.log("Socket disconnected");
+                setIsConnected(false);
+            });
+
             newSocket.on("getOnlineUsers", (userIds) => {
                 setOnlineUsers(userIds);
             });
@@ -34,12 +45,14 @@ export const SocketProvider = ({ children }) => {
             return () => {
                 newSocket.disconnect();
                 setSocket(null);
+                setIsConnected(false);
             };
         } else {
             // Disconnect socket when user logs out
             if (socket) {
                 socket.disconnect();
                 setSocket(null);
+                setIsConnected(false);
             }
         }
     }, [authUser]);
@@ -47,6 +60,7 @@ export const SocketProvider = ({ children }) => {
     const value = {
         socket,
         onlineUsers,
+        isConnected,
     };
 
     return (

@@ -1,0 +1,34 @@
+/* 1. Định nghĩa chuyển động */
+@keyframes scrollY {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+/* 2. Lớp bọc bên ngoài để tạo hiệu ứng mờ 2 đầu */
+.scroll-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /*nội dung mờ dần ở trên và dưới */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+}
+
+/* nội dung bên trong sẽ chạy animation */
+.scroll-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Khoảng cách giữa các item */
+  position: absolute;
+  width: 100%;
+  animation-name: scrollY; /* 3. Áp dụng animation */
+  animation-duration: 20s; /* Thời gian chạy một vòng */
+  animation-timing-function: linear; /* Tốc độ đều */
+  animation-iteration-count: infinite; /* Lặp vô hạn */
+}
+
+/*di chuột vào thì dừng */
+.scroll-content:hover {
+  animation-play-state: paused;
+}
