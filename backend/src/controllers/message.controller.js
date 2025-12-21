@@ -1,5 +1,5 @@
 import { uploadOnCloudinary } from "../lib/cloudinary.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketIds, io } from "../lib/socket.js";
 import {
   getAllContactsService,
   getChatPartnersService,
