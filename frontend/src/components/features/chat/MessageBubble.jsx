@@ -15,6 +15,16 @@ export default function MessageBubble({ message, isMe, avatar }) {
               ? "bg-gradient-to-br from-pink-500 to-rose-400 text-white rounded-[20px] rounded-tr-sm" 
               : "bg-white border border-gray-100 text-gray-800 rounded-[20px] rounded-tl-sm"
             }`}>
+          {message.image && (
+            <img 
+              src={message.image} 
+              alt="Shared image" 
+              className="object-cover rounded-lg mb-2 cursor-pointer"
+              width={360}
+              height={360}
+              onClick={() => window.open(message.image, '_blank')}
+            />
+          )}
           {message.text}
         </div>
         
