@@ -1,27 +1,21 @@
-import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import SettingsSidebar from "./SettingsSidebar";
-import SettingsDetail from "./SettingsDetail";
 
 export default function SettingsDashboard() {
-  const [activeTab, setActiveTab] = useState("profile");
-
   return (
-    <div className="layout-container">
+    <div className="flex h-full w-full bg-[#FAFAFA]">
       
       {/* 1. Sidebar Trái */}
-      <div className="sidebar-panel">
-        <SettingsSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="w-64 h-full flex-shrink-0 hidden md:block border-r border-gray-100 bg-white">
+        <SettingsSidebar />
       </div>
 
       {/* 2. Nội dung Chính */}
-      <div className="main-content">
-        <div className="scroll-area">
-           <div className="max-w-2xl mx-auto pt-4">
-              <SettingsDetail activeTab={activeTab} />
-           </div>
-        </div>
+      <div className="flex-1 h-full min-w-0 flex flex-col relative">
+              <Outlet />
+          
       </div>
-
     </div>
+
   );
 }

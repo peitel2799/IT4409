@@ -3,14 +3,14 @@ import { useState } from "react";
 import { useChat } from "../../../context/ChatContext";
 
 export default function ChatInput({ chat }) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(""); // lưu trữ tin nhắn người dùng nhập
   const { sendMessage } = useChat();
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!text.trim() || !chat) return;
     await sendMessage(chat._id || chat.id, text.trim());
-    setText("");
+    setText(""); // Xóa nội dung sau khi gửi
   };
 
   return (

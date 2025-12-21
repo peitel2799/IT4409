@@ -15,6 +15,8 @@ import { useAuth } from "./context/AuthContext";
 import AuthLayout from './layouts/AuthLayout';
 import FriendsList from "./components/features/friends/FriendsList";
 import SentRequests from "./components/features/friends/SentRequests";
+import ProfileSettings from "./components/features/settings/ProfileSettings";
+import ChangePassword from "./components/features/settings/ChangePassword";
 function App() {
   const { authUser, isCheckingAuth } = useAuth();
 
@@ -59,7 +61,13 @@ function App() {
             <Route path="sent" element={<SentRequests />} />
           </Route>
           <Route path="calls" element={<CallsDashboard />} />
-          <Route path="settings" element={<SettingsDashboard />} />
+          {/* [MODIFIED] Cấu hình Nested Route cho Settings */}
+          <Route path="settings" element={<SettingsDashboard />}>
+            {/* Mặc định vào settings sẽ chuyển ngay tới profile */}
+            <Route index element={<Navigate to="profile" replace />} />
+            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="password" element={<ChangePassword />} />
+          </Route>
         </Route>
       </Routes>
     </>

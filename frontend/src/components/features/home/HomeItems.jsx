@@ -1,16 +1,16 @@
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed } from 'lucide-react';
+import './AutoScroll.css'; 
 
-// 1. Component AutoScroll (Hiệu ứng trượt)
-export const AutoScrollList = ({ children, speed = "20s" }) => {
-    return (
-        <div className="relative w-full h-full overflow-hidden" style={{ maskImage: 'linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)' }}>
-            <div className="flex flex-col gap-3 absolute w-full hover:[animation-play-state:paused]" style={{ animation: `scrollY ${speed} linear infinite` }}>
-                <style>{`@keyframes scrollY { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }`}</style>
-                {children}
-                {children}
-            </div>
-        </div>
-    );
+// 1. AutoScroll List Component
+export const AutoScrollList = ({ children }) => {
+  return (
+    <div className="scroll-container">
+      <div className="scroll-content">
+        {children}
+        {children}
+      </div>
+    </div>
+  );
 };
 
 // 2. Call Item
