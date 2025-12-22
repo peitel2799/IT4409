@@ -1,3 +1,4 @@
+import EmojiPicker from "emoji-picker-react";
 import { Image, Loader2, Send, Smile, X } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -22,6 +23,7 @@ export default function ChatInput({ chat }) {
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const { sendMessage } = useChat();
+  const [isEmojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleSend = async (e) => {
@@ -73,6 +75,20 @@ export default function ChatInput({ chat }) {
   };
 
   return (
+    <div className="relative">
+      {isEmojiPickerOpen && (
+        <div className="absolute bottom-full right-20 mb-2 z-10">
+          <EmojiPicker
+            open={isEmojiPickerOpen}
+            onEmojiClick={(emoji) => {
+              setText(prev => prev + emoji.emoji);
+              setEmojiPickerOpen(false);
+            }}
+            className="custom-emoji-picker"
+            previewConfig={{showPreview: false}}
+          />
+        </div>
+      )}
     <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100">
       {/* Image preview section */}
       {previewImage && (
@@ -120,7 +136,7 @@ export default function ChatInput({ chat }) {
           className="flex-1 bg-transparent px-2 py-2 text-sm focus:outline-none text-gray-700 placeholder:text-gray-400"
         />
 
-        <button type="button" className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+        <button type="button" onClick={() => setEmojiPickerOpen(!isEmojiPickerOpen)} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
           <Smile size={20} />
         </button>
 
@@ -138,5 +154,6 @@ export default function ChatInput({ chat }) {
         </button>
       </div>
     </form>
+  </div>
   );
 }
