@@ -1,8 +1,12 @@
 import { Phone, Video, Sidebar, Cloud, HardDrive } from "lucide-react";
 import { useSocket } from "../../../context/SocketContext";
+import { useCall } from "../../../context/CallContext";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function ChatHeader({ chat, onToggleInfoSidebar, isInfoSidebarOpen }) {
-  const { onlineUsers } = useSocket();
+  const { onlineUsers, socket } = useSocket();
+  const { authUser } = useAuth();
+  const { setCallState, getUserMedia, localStream } = useCall();
 
   // Check if this is My Cloud (self-chat)
   const isSelfChat = chat.isSelfChat;
@@ -13,10 +17,42 @@ export default function ChatHeader({ chat, onToggleInfoSidebar, isInfoSidebarOpe
   // Get avatar with fallback
   const avatarUrl = chat.avatar || chat.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.name || 'U')}`;
 
-  // Handle starting a call
-  const handleStartCall = (isVideo) => {
+  // Handle starting a call - emit from main window, then open call window
+  const handleStartCall = async (isVideo) => {
     if (isSelfChat) return; // Can't call yourself
 
+    const receiverId = chat.id || chat._id;
+    
+    // Check if socket is connected
+    if (!socket || !authUser) {
+      console.error("Socket not connected or user not authenticated");
+      return;
+    }
+
+    // Check if receiver is online
+    if (!onlineUsers.includes(receiverId)) {
+      alert("User is offline. Cannot start call.");
+      return;
+    }
+
+    console.log("=== Starting call from ChatHeader ===");
+    console.log("Receiver:", receiverId);
+    console.log("Socket connected:", socket.connected);
+
+    // Emit call:initiate from main window (where socket is already connected)
+    socket.emit("call:initiate", {
+      receiverId,
+      callerInfo: {
+        id: authUser._id,
+        name: authUser.fullName,
+        avatar: authUser.profilePic,
+      },
+      isVideo,
+    });
+
+    console.log("call:initiate emitted from main window");
+
+    // Open call window
     const width = 900;
     const height = 650;
     const left = (window.screen.width - width) / 2;
@@ -25,8 +61,9 @@ export default function ChatHeader({ chat, onToggleInfoSidebar, isInfoSidebarOpe
     const params = new URLSearchParams({
       name: chat.name,
       avatar: avatarUrl,
-      id: chat.id || chat._id,
-      video: isVideo ? "true" : "false"
+      id: receiverId,
+      video: isVideo ? "true" : "false",
+      caller: "true", // Mark this as caller window
     });
 
     window.open(

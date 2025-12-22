@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 
 export default function FriendsSidebar() {
   const menuItems = [
-    { path: "all", label: "All Friends", icon: Users },         // Không có / ở đầu, cũng không có 'chat/friends'
+    { path: "all", label: "All Friends", icon: Users },         
     { path: "online", label: "Online", icon: UserCheck },
     { path: "requests", label: "Requests", icon: Clock },
     { path: "sent", label: "Sent Requests", icon: SendToBack },

@@ -1,12 +1,12 @@
 import {
   createContext,
-  useContext,
-  useState,
   useCallback,
+  useContext,
   useEffect,
+  useState,
 } from "react";
-import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../lib/axios";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 
@@ -137,22 +137,23 @@ export const ChatProvider = ({ children }) => {
   );
 
   const sendMessage = useCallback(
-    async (receiverId, text, image = null) => {
-      if (!text && !image) {
+    async (receiverId, formData) => {
+      // formData contains 'text' and optionally 'image'
+      const text = formData.get('text');
+      const imageFile = formData.get('image');
+      if (!text && !imageFile) {
         toast.error("Message cannot be empty");
         return;
       }
 
       try {
-        const res = await axiosInstance.post(`/messages/send/${receiverId}`, {
-          text,
-          image,
+        const res = await axiosInstance.post(`/messages/send/${receiverId}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         });
 
         // Optimistically add message to UI or let socket handle it
-        // If your backend emits 'newMessage' upon saving, you might not need to manually add it here
-        // to avoid duplicates if the socket event comes in quickly.
-        // However, for immediate feedback, you can add it.
         setMessages((prev) => [...prev, res.data]);
       } catch (error) {
         toast.error(
@@ -162,7 +163,7 @@ export const ChatProvider = ({ children }) => {
         );
       }
     },
-    []
+    [axiosInstance, setMessages]
   );
 
   const markAsRead = useCallback(
@@ -179,6 +180,7 @@ export const ChatProvider = ({ children }) => {
     },
     [socket]
   );
+
 
   // --- SOCKET LISTENERS FOR MESSAGES ---
   useEffect(() => {
