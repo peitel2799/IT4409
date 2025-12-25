@@ -43,8 +43,8 @@ export default function FriendCard({ user, type, onStartChat, viewMode }) {
   };
 
   // Get avatar with fallback
-  const avatarUrl = user.profilePic || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'U')}`;
-  const displayName = user.fullName || user.name || "Unknown";
+  const avatarUrl = user.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'U')}&background=random`;
+  const displayName = user.fullName || user.fullName || "Unknown";
 
   // --- 1. Friend Requests Tab ---
   if (type === 'requests') {

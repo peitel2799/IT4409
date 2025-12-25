@@ -17,13 +17,14 @@ export const getAllContactsService = async (userId) => {
  * Get messages between two users
  */
 export const getMessagesByUserIdService = async (myId, userToChatId) => {
-    const messages = await Message.find({
+    return await Message.find({
         $or: [
             { senderId: myId, receiverId: userToChatId },
             { senderId: userToChatId, receiverId: myId },
         ],
-    });
-    return messages;
+    })
+    .populate("senderId", "fullName profilePic email")
+    .populate("receiverId", "fullName profilePic email");
 };
 
 /**
@@ -93,8 +94,7 @@ export const getChatPartnersService = async (userId) => {
         return {
             _id: partner._id,
             fullName: partner.fullName,
-            username: partner.username,
-            avatar: partner.avatar,
+            email: partner.email,
             profilePic: partner.profilePic,
             isOnline: partner.isOnline || false,
             lastMessage: partnerData?.lastMessage?.text || "",
@@ -108,7 +108,8 @@ export const getChatPartnersService = async (userId) => {
 
     return result;
 };
-
+//username: partner.username,
+            //avatar: partner.avatar,
 /**
  * Mark all messages from a partner as read
  */

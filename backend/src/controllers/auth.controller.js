@@ -54,16 +54,15 @@ export const logout = (_, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 };
 
+
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic } = req.body;
+    const { profilePic, fullName } = req.body;
     const userId = req.user._id;
 
-    const updatedUser = await updateProfileService(userId, profilePic);
-
+    const updatedUser = await updateProfileService(userId, { fullName, profilePic });
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.error("updateProfile:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

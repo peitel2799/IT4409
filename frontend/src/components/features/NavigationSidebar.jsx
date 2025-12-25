@@ -20,7 +20,7 @@ const NavItem = ({ icon: Icon, to, onClick }) => (
   </NavLink>
 );
 
-export default function NavigationSidebar({ activePanel, onPanelChange }) {
+export default function NavigationSidebar() {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -31,43 +31,26 @@ export default function NavigationSidebar({ activePanel, onPanelChange }) {
 
   return (
     <nav className="flex flex-col w-18 h-full py-6 items-center flex-shrink-0 bg-transparent gap-1 overflow-y-auto no-scrollbar">
-
       {/* Home */}
       <div className="mb-2">
-        <NavItem
-          icon={Home}
-          to="/chat/home"
-        />
+        <NavItem icon={Home} to="/chat/home" />
       </div>
 
-      {/* Chats / Calls / Friends */}
+      {/* Main Nav */}
       <div className="flex flex-col gap-4">
-        <NavItem
-          icon={MessageCircle}
-          to="/chat/messages"
-        />
-        <NavItem
-          icon={Phone}
-          to="/chat/calls"
-        />
-        <NavItem
-          icon={User}
-          to="/chat/friends"
-        />
+        <NavItem icon={MessageCircle} to="/chat/messages" />
+        <NavItem icon={Phone} to="/chat/calls" />
+        <NavItem icon={User} to="/chat/friends" />
       </div>
 
-      {/* Spacer */}
       <div className="flex-1"></div>
 
-      {/* Settings / Logout */}
+      {/* Bottom Nav */}
       <div className="flex flex-col gap-4 mb-4">
-        <NavItem
-          icon={Settings}
-          to="/chat/settings"
-        />
+        <NavItem icon={Settings} to="/chat/settings" />
         <button
           onClick={handleLogout}
-          className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white text-black shadow-sm hover:text-pink-400 hover:shadow-md transition-all"
+          className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white text-black shadow-sm hover:text-pink-400 hover:shadow-md transition-all active:scale-95"
         >
           <LogOut size={22} />
         </button>

@@ -4,24 +4,32 @@ import { useSocket } from "../../../context/SocketContext";
 
 export default function RightSidebar({ onStartChat }) {
   const { allContacts } = useChat();
-  const { friendRequests, acceptFriendRequest, rejectFriendRequest } = useFriend();
+  const { friendRequests, acceptFriendRequest, rejectFriendRequest } =
+    useFriend();
   const { onlineUsers } = useSocket();
 
   // Filter online friends using onlineUsers array
   // Use Array.isArray to guard against API returning error objects
   const safeContacts = Array.isArray(allContacts) ? allContacts : [];
   const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
-  const onlineFriends = safeContacts.filter(c => safeOnlineUsers.includes(c._id));
+  const onlineFriends = safeContacts.filter((c) =>
+    safeOnlineUsers.includes(c._id)
+  );
 
   // Get avatar with fallback
   const getAvatar = (user) =>
-    user.profilePic || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'U')}`;
+    user.profilePic ||
+    user.profilePic ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      user.fullName || user.name || "U"
+    )}`;
 
   const renderFriendItem = (user, showButtons = false) => (
     <div
       key={user.id || user._id}
-      className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${!showButtons ? "hover:bg-gray-50 cursor-pointer" : ""
-        }`}
+      className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
+        !showButtons ? "hover:bg-gray-50 cursor-pointer" : ""
+      }`}
     >
       <div className="relative flex-shrink-0">
         <img
@@ -63,7 +71,9 @@ export default function RightSidebar({ onStartChat }) {
       {Array.isArray(friendRequests) && friendRequests.length > 0 && (
         <div className="mb-5 pb-5 border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase">Requests</h3>
+            <h3 className="text-sm font-semibold text-gray-700 uppercase">
+              Requests
+            </h3>
             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {friendRequests.length}
             </span>
@@ -76,11 +86,15 @@ export default function RightSidebar({ onStartChat }) {
 
       {/* Online Section */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Active Now</h3>
+        <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">
+          Active Now
+        </h3>
         <div className="flex flex-col gap-2">
           {onlineFriends.length > 0 ? (
             onlineFriends.map((user) => (
-              <div key={user._id} onClick={() => onStartChat(user)}>{renderFriendItem(user)}</div>
+              <div key={user._id} onClick={() => onStartChat(user)}>
+                {renderFriendItem(user)}
+              </div>
             ))
           ) : (
             <p className="text-xs text-gray-400 italic">No friends online</p>

@@ -79,16 +79,19 @@ export const loginService = async (email, password) => {
 /**
  * Update user profile picture
  */
-export const updateProfileService = async (userId, profilePic) => {
-    if (!profilePic) {
-        throw new AppError("Profile pic is required", 400);
+export const updateProfileService = async (userId, { fullName, profilePic }) => {
+    const updateData = {};
+    if (fullName) updateData.fullName = fullName; //
+    
+    if (profilePic) {
+        // Upload Base64 lên Cloudinary
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+        updateData.profilePic = uploadResponse.secure_url; //
     }
-
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
 
     const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { profilePic: uploadResponse.secure_url },
+        updateData,
         { new: true }
     ).select("-password");
 

@@ -82,17 +82,18 @@ export const ChatProvider = ({ children }) => {
       // Transform chat partners into the format expected by ConversationSidebar
       const chats = chatPartners.map((partner) => {
         // Check if this is a self-chat (My Cloud)
+        //console.log("Dữ liệu partner từ API:", partner);
         const isSelfChat = authUser && partner._id === authUser._id;
 
         return {
-          id: partner._id,
+          ...partner,
           name: isSelfChat ? "My Cloud" : (partner.fullName || partner.username || "Unknown"),
           avatar: isSelfChat
             ? "https://cdn-icons-png.flaticon.com/512/4144/4144099.png" // Cloud icon
             : (partner.avatar || partner.profilePic || "https://ui-avatars.com/api/?name=" + encodeURIComponent(partner.fullName || partner.username || "U")),
           lastMessage: partner.lastMessage || "",
           time: formatTimeAgo(partner.lastMessageTime),
-          unread: partner.unreadCount || 0,
+          unreadCount: partner.unreadCount || 0, 
           isOnline: isSelfChat ? true : (partner.isOnline || false), // My Cloud is always "available"
           isSelfChat: isSelfChat, // Flag to identify My Cloud
         };
@@ -103,9 +104,34 @@ export const ChatProvider = ({ children }) => {
       console.error("Failed to load home stats:", error);
       setHomeStats({ calls: [], chats: [], notes: [] });
     }
-  }, []);
+  }, [authUser]); // Added authUser dependency
 
   // --- MESSAGES ---
+  
+  //markAsRead để tự động xóa thông báo khi load tin nhắn
+  const markAsRead = useCallback(
+    async (partnerId) => {
+      try {
+        await axiosInstance.post(`/messages/read/${partnerId}`);
+
+        // Cập nhật local state ngay lập tức để mất số unread ở sidebar
+        setHomeStats((prev) => ({
+          ...prev,
+          chats: prev.chats.map((chat) =>
+            chat._id === partnerId ? { ...chat, unreadCount: 0 } : chat 
+          ),
+        }));
+
+        if (socket) {
+          socket.emit("markAsRead", { partnerId });
+        }
+      } catch (error) {
+        console.log("Error marking messages as read:", error);
+      }
+    },
+    [socket]
+  );
+
   const getMessagesByUserId = useCallback(
     async (userId) => {
       setIsMessagesLoading(true);
@@ -119,10 +145,9 @@ export const ChatProvider = ({ children }) => {
         // Ensure we always set an array, even if API returns unexpected data
         setMessages(Array.isArray(res.data) ? res.data : []);
 
-        // Mark all received messages as read when opening chat
-        if (socket) {
-          socket.emit("markAsRead", { partnerId: userId });
-        }
+        //gọi hàm markAsRead() để cập nhật cả Database
+        markAsRead(userId);
+
       } catch (error) {
         toast.error(
           error.response?.data?.message ||
@@ -133,7 +158,7 @@ export const ChatProvider = ({ children }) => {
         setIsMessagesLoading(false);
       }
     },
-    [socket]
+    [markAsRead] 
   );
 
   const sendMessage = useCallback(
@@ -153,8 +178,20 @@ export const ChatProvider = ({ children }) => {
           },
         });
 
-        // Optimistically add message to UI or let socket handle it
-        setMessages((prev) => [...prev, res.data]);
+        // Optimistically add message to UI
+        const newMessage = res.data; //lưu tin nhắn mới vào biến
+        setMessages((prev) => [...prev, newMessage]);
+
+        //Cập nhật tin nhắn cuối cùng và sắp xếp lại sidebar khi mình gửi tin
+        setHomeStats((prev) => ({
+          ...prev,
+          chats: prev.chats.map((chat) =>
+            chat._id === receiverId
+              ? { ...chat, lastMessage: newMessage.text || "Sent an image", lastMessageTime: newMessage.createdAt }
+              : chat
+          ).sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)),
+        }));
+
       } catch (error) {
         toast.error(
           error.response?.data?.message ||
@@ -163,22 +200,7 @@ export const ChatProvider = ({ children }) => {
         );
       }
     },
-    [axiosInstance, setMessages]
-  );
-
-  const markAsRead = useCallback(
-    async (partnerId) => {
-      try {
-        await axiosInstance.post(`/messages/read/${partnerId}`);
-
-        if (socket) {
-          socket.emit("markAsRead", { partnerId });
-        }
-      } catch (error) {
-        console.log("Error marking messages as read:", error);
-      }
-    },
-    [socket]
+    [axiosInstance]
   );
 
 
@@ -186,18 +208,52 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (socket && authUser) {
       socket.on("newMessage", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
+        //Kiểm tra xem tin nhắn có thuộc về cuộc hội thoại đang mở không
+        const senderId = message.senderId?._id || message.senderId;
+        const isFromSelectedUser = selectedUser && senderId === selectedUser._id;
+
+        if (isFromSelectedUser) {
+          // Nếu đúng là người đang chat, thêm vào màn hình và đánh dấu đã đọc
+          setMessages((prevMessages) => [...prevMessages, message]);
+          markAsRead(selectedUser._id);
+        } else {
+          //tăng unreadCount và đưa chat mới nhất lên đầu
+          setHomeStats((prev) => {
+            const chatExists = prev.chats.find((c) => c._id === senderId);
+            if (chatExists) {
+              const updatedChats = prev.chats.map((chat) =>
+                chat._id === senderId
+                  ? { 
+                      ...chat, 
+                      unreadCount: (chat.unreadCount || 0) + 1, 
+                      lastMessage: message.text, 
+                      lastMessageTime: message.createdAt 
+                    }
+                  : chat
+              );
+              // Sắp xếp lại để người mới nhắn lên đầu
+              return { 
+                ...prev, 
+                chats: updatedChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)) 
+              };
+            } else {
+              // Nếu là người lạ nhắn tin, gọi lại API để làm mới danh sách 
+              getHomeStats();
+              return prev;
+            }
+          });
+        }
+
         if (isSoundEnabled) {
-          // Play notification sound if enabled
+          // Play notification sound
         }
       });
-
-
 
       socket.on("messagesRead", (data) => {
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
-            msg.senderId === authUser._id && msg.receiverId === data.partnerId
+            (msg.senderId === authUser._id || msg.senderId?._id === authUser._id) && 
+            (msg.receiverId === data.partnerId || msg.receiverId?._id === data.partnerId)
               ? { ...msg, isRead: true }
               : msg
           )
@@ -206,12 +262,11 @@ export const ChatProvider = ({ children }) => {
 
       return () => {
         socket.off("newMessage");
-
         socket.off("messagesRead");
       };
     }
-  }, [socket, authUser, isSoundEnabled]);
 
+  }, [socket, authUser, isSoundEnabled, selectedUser, markAsRead, getHomeStats]); 
   const value = {
     // Contacts & Stats
     allContacts,

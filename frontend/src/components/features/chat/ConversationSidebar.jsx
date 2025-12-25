@@ -14,7 +14,7 @@ export default function ConversationSidebar({ selectedChat, onChatSelect }) {
   }, [getHomeStats]);
 
   const filteredChats = chats.filter((chat) => {
-    if (filter === "unread") return chat.unread > 0;
+    if (filter === "unread") return chat.unreadCount > 0;
     return true;
   });
 
@@ -25,9 +25,9 @@ export default function ConversationSidebar({ selectedChat, onChatSelect }) {
       <div className="flex-1 overflow-y-auto pt-2 pb-4 custom-scrollbar">
         {filteredChats.map((chat) => (
           <ConversationItem
-            key={chat.id}
+            key={chat._id}
             chat={chat}
-            isActive={selectedChat?.id === chat.id}
+            isActive={selectedChat?._id === chat._id}
             onClick={() => onChatSelect(chat)}
           />
         ))}

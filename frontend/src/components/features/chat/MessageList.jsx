@@ -17,7 +17,10 @@ function formatDate(dateStr) {
 
 function formatTime(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  return new Date(dateStr).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function MessageList({ chat }) {
@@ -45,11 +48,19 @@ export default function MessageList({ chat }) {
   }, [messages]);
 
   if (isMessagesLoading) {
-    return <div className="flex-1 flex items-center justify-center"><LoaderIcon className="w-8 h-8 animate-spin text-pink-300" /></div>;
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <LoaderIcon className="w-8 h-8 animate-spin text-pink-300" />
+      </div>
+    );
   }
 
   if (!messages || messages.length === 0) {
-    return <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-sm">No messages yet.</div>;
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-sm">
+        No messages yet.
+      </div>
+    );
   }
 
   return (
@@ -62,14 +73,24 @@ export default function MessageList({ chat }) {
             </span>
           </div>
           <div className="space-y-1">
-            {msgs.map((msg) => (
-              <MessageBubble
-                key={msg._id || msg.id}
-                message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
-                isMe={msg.senderId === authUser?._id}
-                avatar={chat.avatar}
-              />
-            ))}
+            {msgs.map((msg) => {
+              const senderId = msg.senderId?._id || msg.senderId;
+              const isMe = senderId === authUser?._id;
+              const getFallbackAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=random`;
+
+              const messageAvatar = isMe 
+                ? (authUser?.profilePic || getFallbackAvatar(authUser?.fullName))
+                : (msg.senderId?.profilePic || chat.profilePic || getFallbackAvatar(chat.fullName));
+
+              return (
+                <MessageBubble
+                  key={msg._id || msg.id}
+                  message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
+                  isMe={isMe}
+                  avatar={messageAvatar}
+                />
+              );
+            })}
           </div>
         </div>
       ))}

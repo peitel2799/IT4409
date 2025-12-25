@@ -30,26 +30,21 @@ export default function ProfileSettings() {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  // Handle submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.fullName.trim()) return toast.error("Full name cannot be empty!");
-    if (!selectedFile && formData.fullName === authUser.fullName) return;
+  // Handle submit 
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      const updateData = { fullName: formData.fullName.trim() }; // Chỉ lấy text
 
-    const uploadData = new FormData();
-    uploadData.append("fullName", formData.fullName.trim());
-    if (selectedFile) uploadData.append("avatar", selectedFile);
-
-    try {
-      await updateProfile(uploadData);
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      toast.success("Profile updated successfully!");
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Something went wrong.");
-    }
-  };
+      if (selectedFile) {
+        const reader = new FileReader();
+        reader.readAsDataURL(selectedFile);
+        reader.onloadend = async () => {
+          await updateProfile({ ...updateData, profilePic: reader.result });
+        };
+      } else {
+        await updateProfile(updateData);
+      }
+    };
 
   // Loading khi chưa có dữ liệu người dùng
   if (!authUser) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-pink-500"/></div>;
@@ -69,10 +64,13 @@ export default function ProfileSettings() {
           <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-gray-100">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
               <img
-                src={previewUrl || authUser.avatar || `https://ui-avatars.com/api/?name=${authUser.fullName}&background=random`}
-                alt="Avatar"
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:opacity-90 transition"
-              />
+                  src={
+                    previewUrl || 
+                    authUser.profilePic || 
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'User')}&background=random` }
+                  alt="Avatar"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:opacity-90 transition"
+                />
               <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera className="text-white w-8 h-8" />
               </div>
