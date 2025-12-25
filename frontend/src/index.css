@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary-color: #ec4899;
+  /* Pink-500 */
+  --primary-hover: #db2777;
+  /* Pink-600 */
+  --bg-soft: #fdf2f8;
+  /* Pink-50 */
+  --ring-color: rgba(236, 72, 153, 0.2);
+}
+
+
 
 html {
   scroll-behavior: smooth;

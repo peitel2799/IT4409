@@ -1,0 +1,7 @@
+.custom-emoji-picker {
+    --epr-bg-color: var(--bg-soft) !important;
+    --epr-category-label-bg-color: var(--bg-soft) !important;
+    --epr-text-color: var(--primary-color) !important;
+    --epr-hover-bg-color: var(--primary-hover) !important;
+    --epr-search-input-bg-color: rgb(255, 255, 255) !important;
+}
