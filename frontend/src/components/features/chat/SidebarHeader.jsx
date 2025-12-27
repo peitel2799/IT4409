@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 
-export default function SidebarHeader({ filter, setFilter }) {
+export default function SidebarHeader({ filter, setFilter, searchQuery, setSearchQuery }) {
   return (
     <div className="flex flex-col gap-3 p-4 pb-2 border-b border-gray-50">
       <div className="flex items-center bg-gray-100 rounded-xl p-3 shadow-sm focus-within:bg-white focus-within:ring-2 focus-within:ring-pink-50 transition-all">
@@ -8,6 +8,8 @@ export default function SidebarHeader({ filter, setFilter }) {
          <input
            type="text"
            placeholder="Search..."
+           value={searchQuery}
+           onChange={(e) => setSearchQuery(e.target.value)}
            className="flex-1 ml-2 bg-transparent text-sm focus:outline-none text-gray-700"
          />
       </div>
@@ -23,7 +25,7 @@ export default function SidebarHeader({ filter, setFilter }) {
                   : "bg-gray-50 text-gray-500 hover:bg-gray-100"
               }`}
             >
-              {type}
+              {type === 'all' ? 'All' : 'Unread'}
             </button>
         ))}
       </div>

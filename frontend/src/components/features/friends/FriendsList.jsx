@@ -1,30 +1,28 @@
 import { useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Search } from "lucide-react";
-import { useChat } from "../../../context/ChatContext";
 import { useFriend } from "../../../context/FriendContext";
 import { useSocket } from "../../../context/SocketContext";
 import FriendCard from "./FriendCard";
 
 // Component shared for: All, Online, Incoming Requests
 export default function FriendsList({ type }) {
-  const { searchQuery, viewMode, onStartChat } = useOutletContext();
-  const { allContacts, getAllContacts } = useChat();
-  const { getFriendRequests, friendRequests } = useFriend();
+  const { searchQuery = "", viewMode = "grid", onStartChat } = useOutletContext() || {};
+  const { getFriendRequests, friendRequests, friends, getFriends } = useFriend();
   const { onlineUsers } = useSocket();
 
   useEffect(() => {
-    getAllContacts();
+    getFriends();
     getFriendRequests();
-  }, [getAllContacts, getFriendRequests]);
+  }, [getFriends, getFriendRequests]); // Xóa getAllContacts khỏi đây để hết lỗi "not defined"
 
   // Add online status to contacts based on onlineUsers array
   // Use Array.isArray to guard against API returning error objects
-  const safeContacts = Array.isArray(allContacts) ? allContacts : [];
+  const safeFriends = Array.isArray(friends) ? friends : [];
   const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
-  const contactsWithStatus = safeContacts.map(contact => ({
-    ...contact,
-    status: safeOnlineUsers.includes(contact._id) ? 'online' : 'offline'
+  const friendsWithStatus = safeFriends.map(friend => ({
+    ...friend,
+    status: (friend && safeOnlineUsers.includes(friend._id)) ? 'online' : 'offline'
   }));
 
   // Filter data based on 'type' prop
@@ -35,11 +33,11 @@ export default function FriendsList({ type }) {
         rawData = Array.isArray(friendRequests) ? friendRequests : [];
         break;
       case "online":
-        rawData = contactsWithStatus.filter(c => c.status === 'online');
+        rawData = friendsWithStatus.filter(c => c.status === 'online');
         break;
       case "all":
       default:
-        rawData = contactsWithStatus;
+        rawData = friendsWithStatus; // lấy từ danh sách bạn bè với trạng thái
         break;
     }
 
@@ -48,7 +46,8 @@ export default function FriendsList({ type }) {
 
     // Filter by search query
     return rawData.filter(item => {
-      const name = item.fullName || item.name || "";
+      // ĐỒNG BỘ MODEL: Ưu tiên fullName
+      const name = item?.fullName || item?.name || "";
       return name.toLowerCase().includes(searchQuery.toLowerCase());
     });
   };
@@ -86,7 +85,7 @@ export default function FriendsList({ type }) {
       }>
         {data.map(user => (
           <FriendCard
-            key={user._id || user.id}
+            key={user?._id || user?.id || Math.random()}
             user={user}
             type={type}
             onStartChat={onStartChat}

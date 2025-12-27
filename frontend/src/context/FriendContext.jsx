@@ -179,13 +179,23 @@ export const FriendProvider = ({ children }) => {
                 await getFriendRequests();
             });
 
+            socket.on("friendRemoved", async () => {
+                await getFriends();
+            });
+
             socket.on("friendRequestAccepted", async () => {
                 await Promise.all([getFriends(), getFriendRequests(), getSentRequests()]);
+            });
+
+            socket.on("friendRequestCancelled", async () => {
+                await getFriendRequests();
             });
 
             return () => {
                 socket.off("friendRequestReceived");
                 socket.off("friendRequestAccepted");
+                socket.off("friendRemoved");
+                socket.off("friendRequestCancelled");
             };
         }
     }, [socket, authUser, getFriends, getFriendRequests, getSentRequests]);

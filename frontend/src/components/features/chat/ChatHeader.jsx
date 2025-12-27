@@ -1,7 +1,7 @@
-import { Phone, Video, Sidebar, Cloud, HardDrive } from "lucide-react";
+import { Phone, Video, Sidebar, ChevronLeft } from "lucide-react";
 import { useSocket } from "../../../context/SocketContext";
-import { useCall } from "../../../context/CallContext";
 import { useAuth } from "../../../context/AuthContext";
+import { useChat } from "../../../context/ChatContext";
 
 export default function ChatHeader({
   chat,
@@ -10,36 +10,28 @@ export default function ChatHeader({
 }) {
   const { onlineUsers, socket } = useSocket();
   const { authUser } = useAuth();
-  const { setCallState, getUserMedia, localStream } = useCall();
+  const { setSelectedUser } = useChat();
 
-  // Check if this is My Cloud (self-chat)
-  const isSelfChat = chat.isSelfChat;
+  if (!chat) return null; // tránh lỗi khi chat chưa có dữ liệu
 
-  // Check if this chat partner is online (My Cloud is always available)
+  // Check if this chat partner is online
   const isOnline =
-    isSelfChat ||
-    onlineUsers.includes(chat.id) ||
-    onlineUsers.includes(chat._id) ||
+    (Array.isArray(onlineUsers) &&
+      (onlineUsers.includes(chat.id) || onlineUsers.includes(chat._id))) ||
     chat.isOnline;
 
   // Get avatar with fallback
   const avatarUrl =
-  chat.profilePic ||
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    chat.fullName || "U"
-  )}&background=random`;
+    chat.profilePic ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      chat.fullName || "U"
+    )}&background=random`;
 
   // Handle starting a call - emit from main window, then open call window
-  const handleStartCall = async (isVideo) => {
-    if (isSelfChat) return; // Can't call yourself
+  const handleStartCall = (isVideo) => {
+    if (!socket || !authUser) return;
 
     const receiverId = chat.id || chat._id;
-
-    // Check if socket is connected
-    if (!socket || !authUser) {
-      console.error("Socket not connected or user not authenticated");
-      return;
-    }
 
     // Check if receiver is online
     if (!onlineUsers.includes(receiverId)) {
@@ -47,11 +39,7 @@ export default function ChatHeader({
       return;
     }
 
-    console.log("=== Starting call from ChatHeader ===");
-    console.log("Receiver:", receiverId);
-    console.log("Socket connected:", socket.connected);
-
-    // Emit call:initiate from main window (where socket is already connected)
+    // Emit call:initiate from main window
     socket.emit("call:initiate", {
       receiverId,
       callerInfo: {
@@ -61,8 +49,6 @@ export default function ChatHeader({
       },
       isVideo,
     });
-
-    console.log("call:initiate emitted from main window");
 
     // Open call window
     const width = 900;
@@ -75,7 +61,7 @@ export default function ChatHeader({
       avatar: avatarUrl,
       id: receiverId,
       video: isVideo ? "true" : "false",
-      caller: "true", // Mark this as caller window
+      caller: "true",
     });
 
     window.open(
@@ -86,96 +72,61 @@ export default function ChatHeader({
   };
 
   return (
-    <div
-      className={`flex items-center justify-between p-4 border-b bg-white/80 backdrop-blur-md sticky top-0 z-10 ${
-        isSelfChat ? "border-blue-100" : "border-gray-100"
-      }`}
-    >
-      <div className="flex items-center gap-3 cursor-pointer group">
-        {isSelfChat ? (
-          // Special cloud avatar for My Cloud
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center border border-blue-200">
-            <Cloud size={20} className="text-white" />
-          </div>
-        ) : (
-          <img
-            src={avatarUrl}
-            alt={chat.fullName}
-            className="w-10 h-10 rounded-full border border-gray-100 object-cover"
-          />
-        )}
+    <div className="flex items-center justify-between p-4 border-b bg-white sticky top-0 z-10">
+      {/* Back button + Avatar gần nhau */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setSelectedUser(null)}
+          className="md:hidden p-1 text-gray-500 hover:bg-gray-100 rounded-full"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <img
+          src={avatarUrl}
+          alt={chat.fullName}
+          className="w-10 h-10 rounded-full border object-cover"
+        />
         <div>
-          <div className="flex items-center gap-2">
-            <h3
-              className={`font-bold text-sm transition-colors ${
-                isSelfChat
-                  ? "text-blue-700 group-hover:text-blue-800"
-                  : "text-gray-800 group-hover:text-pink-600"
-              }`}
-            >
-              {chat.fullName}
-            </h3>
-            {isSelfChat && <HardDrive size={12} className="text-blue-400" />}
-          </div>
+          <h3 className="font-bold text-sm text-gray-800 group-hover:text-pink-600">
+            {chat.fullName}
+          </h3>
           <p
-            className={`text-xs font-medium flex items-center gap-1 ${
-              isSelfChat
-                ? "text-blue-500"
-                : isOnline
-                ? "text-green-500"
-                : "text-gray-400"
+            className={`text-xs flex items-center gap-1 ${
+              isOnline ? "text-green-500" : "text-gray-400"
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                isSelfChat
-                  ? "bg-blue-500"
-                  : isOnline
-                  ? "bg-green-500"
-                  : "bg-gray-300"
+                isOnline ? "bg-green-500" : "bg-gray-300"
               }`}
             ></span>
-            {isSelfChat
-              ? "Save notes & files"
-              : isOnline
-              ? "Online"
-              : "Offline"}
+            {isOnline ? "Online" : "Offline"}
           </p>
         </div>
       </div>
 
+      {/* Action buttons */}
       <div className="flex items-center gap-1">
-        {!isSelfChat && (
-          <>
-            {/* Voice Call Button */}
-            <button
-              onClick={() => handleStartCall(false)}
-              className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
-              title="Voice Call"
-            >
-              <Phone size={20} />
-            </button>
-
-            {/* Video Call Button */}
-            <button
-              onClick={() => handleStartCall(true)}
-              className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
-              title="Video Call"
-            >
-              <Video size={20} />
-            </button>
-
-            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-          </>
-        )}
-
+        <button
+          onClick={() => handleStartCall(false)}
+          className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl"
+          title="Voice Call"
+        >
+          <Phone size={20} />
+        </button>
+        <button
+          onClick={() => handleStartCall(true)}
+          className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl"
+          title="Video Call"
+        >
+          <Video size={20} />
+        </button>
+        <div className="w-px h-6 bg-gray-200 mx-1"></div>
         <button
           onClick={onToggleInfoSidebar}
-          className={`p-2 rounded-xl transition-all ${
+          className={`p-2 rounded-xl ${
             isInfoSidebarOpen
-              ? isSelfChat
-                ? "bg-blue-50 text-blue-500"
-                : "bg-pink-50 text-pink-500"
+              ? "bg-pink-50 text-pink-500"
               : "text-gray-400 hover:text-gray-800 hover:bg-gray-100"
           }`}
         >

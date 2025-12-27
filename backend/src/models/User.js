@@ -19,6 +19,18 @@ const userSchema = new mongoose.Schema({
             type: String,
             default: "",
         },
+        otp: {
+            type: String,
+            default: null,
+        },
+        otpExpires: {
+            type: Date,
+            default: null,
+        },
+        isVerified: {
+            type: Boolean,
+            default: false, // Mặc định là chưa xác thực
+        },
         friends: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

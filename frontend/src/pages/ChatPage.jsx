@@ -11,36 +11,20 @@ import IncomingCallModal from "../components/IncomingCallModal";
 
 // Content component separated from Providers
 const ChatPageContent = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // 1. Highlight Sidebar based on URL
-  const currentPath = location.pathname.split("/").pop();
-  const activePanel = currentPath === "messages" ? "chats" : currentPath;
-
-  // 2. Navigate to URL when clicking Sidebar
-  const handlePanelChange = (panel) => {
-    const routeMap = {
-      home: "home",
-      chats: "messages",
-      friends: "friends",
-      calls: "calls",
-      settings: "settings",
-    };
-    navigate(`/chat/${routeMap[panel] || "home"}`);
-  };
-
   return (
-    <div className="h-screen w-full bg-[#F2F0E9] flex items-center justify-start p-2 pr-2 font-sans">
-      <div className="w-full h-full flex gap-3 overflow-hidden">
-        <NavigationSidebar activePanel={activePanel} onPanelChange={handlePanelChange} />
-
-        <div className="flex-1 h-full min-w-0 bg-white rounded-3xl shadow-xl overflow-hidden relative">
-          {/* Child routes will render here via Outlet */}
-          <Outlet />
-        </div>
-      </div>
+    // Responsive: flex-col trên mobile, flex-row trên desktop
+    <div className="h-screen w-full bg-[#F2F0E9] flex flex-col md:flex-row p-0 md:p-2 gap-0 md:gap-1 overflow-hidden">
       
+      {/* Vùng nội dung chính: Hiện lên trên cùng ở mobile (order-1) */}
+      <div className="flex-1 h-full min-w-0 bg-white md:rounded-3xl shadow-xl overflow-hidden relative order-1 md:order-2">
+        <Outlet />
+      </div>
+
+      {/* Navigation: Hiện ở dưới cùng trên mobile (order-2) */}
+      <div className="order-2 md:order-1 w-full md:w-auto shrink-0">
+        <NavigationSidebar />
+      </div>
+  
       {/* Incoming Call Modal - shown when receiving a call */}
       <IncomingCallModal />
     </div>

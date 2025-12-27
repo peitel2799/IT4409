@@ -20,8 +20,8 @@ export default function HomeDashboard() {
   };
 
   return (
-    <div className="h-full w-full p-4 overflow-hidden font-sans text-gray-800">
-      <div className="grid grid-cols-3 gap-4 h-full">
+    <div className="h-full w-full p-4 overflow-y-auto md:overfollow-hidden font-sans text-gray-800">
+      <div className="grid gird-cols-1 md:grid-cols-3 gap-4 h-full">
         {/* CALLS */}
         <SectionCard
           title="Calls" subtitle="Recent history" icon={Phone} image="/call.jpg"

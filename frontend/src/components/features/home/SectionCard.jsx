@@ -16,7 +16,7 @@ export default function SectionCard({
   return (
     <div
       onClick={onClick} 
-      className={`relative h-full rounded-2xl border ${borderColor} ${bgColor} overflow-hidden
+      className={`relative h-[450px] md:h-full rounded-2xl border ${borderColor} ${bgColor} overflow-hidden
                   shadow-sm group transition-transform duration-500 hover:scale-[1.02] 
                   cursor-pointer active:scale-95`}
     >
@@ -49,7 +49,7 @@ export default function SectionCard({
         <div className={`${iconBg} backdrop-blur-md p-3 rounded-2xl w-fit mb-2 shadow-sm`}>
           <Icon size={24} className={iconColor} />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800">{title}</h2>
         <p className="text-sm text-gray-500">{subtitle}</p>
       </div>
     </div>

@@ -81,13 +81,12 @@ export default function MessageBubble({ message, isMe, avatar }) {
           )}
           {message.text}
         </div>
-
         {/* Time Stamp */}
         <span className={`text-[10px] text-gray-400 px-1 transition-opacity select-none absolute -bottom-5 w-max
             ${showReactionBar ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
             ${isMe ? "right-1" : "left-1"}
           `}>
-          {message.displayTime}
+          {message.displayTime} {isMe && message.isRead && "Seen"} {isMe && !message.isRead && "Sent"}
         </span>
       </div>
 

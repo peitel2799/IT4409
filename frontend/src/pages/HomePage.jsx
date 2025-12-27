@@ -1,25 +1,54 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircleIcon, MailIcon, PhoneIcon, MapPinIcon, FacebookIcon, TwitterIcon, LinkedinIcon } from 'lucide-react';
-
+import { useState } from 'react';
 // Navbar
 function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <nav className="w-full bg-white shadow p-4 flex justify-between items-center sticky top-0 z-40">
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-pink-400">
-        <MessageCircleIcon className="w-8 h-8" /> {/* Logo icon */}
+      <Link to="/" className="flex items-center gap-2 text-xl md:text-2xl font-bold text-pink-400">
+        <MessageCircleIcon className="w-8 h-8" />
         <span>ChatWeb</span>
       </Link>
 
-      {/* Menu */}
-      <div className="flex items-center gap-6 text-gray-700 font-medium">
-        <a href="#about" className="hover:text-pink-400 text-xl">About</a> {/* Link to About section */}
-        <a href="#contact" className="hover:text-pink-400 text-xl">Contact</a> {/* Link to Contact section */}
-        <Link to="/login" className="px-4 py-2 bg-pink-400 text-white rounded hover:bg-pink-500">
+      {/* Menu Mobile Button */}
+      <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+        <div className="space-y-1.5">
+          <div className="w-6 h-0.5 bg-gray-600"></div>
+          <div className="w-6 h-0.5 bg-gray-600"></div>
+          <div className="w-6 h-0.5 bg-gray-600"></div>
+        </div>
+      </button>
+
+      {/* Menu Desktop */}
+      <div className="hidden md:flex items-center gap-6 text-gray-700 font-medium">
+        <a href="#about" className="hover:text-pink-400 text-xl">About</a>
+        <a href="#contact" className="hover:text-pink-400 text-xl">Contact</a>
+        <Link
+          to="/login"
+          className="px-4 py-2 bg-pink-400 text-white rounded hover:bg-pink-500"
+        >
           Login / Sign Up
         </Link>
       </div>
+
+      {/* Menu Mobile */}
+      {isOpen && (
+        <div className="absolute top-full left-0 w-full bg-white shadow md:hidden flex flex-col gap-4 p-4">
+          <a href="#about" onClick={() => setIsOpen(false)}>About</a>
+          <a href="#contact" onClick={() => setIsOpen(false)}>Contact</a>
+          <Link
+            to="/login"
+            onClick={() => setIsOpen(false)}
+            className="text-pink-400 font-bold"
+          >
+            Login / Sign Up
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }
