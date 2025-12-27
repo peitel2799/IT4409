@@ -110,6 +110,7 @@ export default function MessageBubble({ message, isMe, avatar }) {
             reactionsDefaultOpen={true}
             style={{ backgroundColor: "#fdf2f8" }}
             onReactionClick={(data) => handleReaction(data.emoji)}
+            onEmojiClick={(data) => handleReaction(data.emoji)}
           />
         </div>
       )}
