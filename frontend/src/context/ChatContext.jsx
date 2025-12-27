@@ -93,7 +93,7 @@ export const ChatProvider = ({ children }) => {
             : (partner.avatar || partner.profilePic || "https://ui-avatars.com/api/?name=" + encodeURIComponent(partner.fullName || partner.username || "U")),
           lastMessage: partner.lastMessage || "",
           time: formatTimeAgo(partner.lastMessageTime),
-          unreadCount: partner.unreadCount || 0, 
+          unreadCount: partner.unreadCount || 0,
           isOnline: isSelfChat ? true : (partner.isOnline || false), // My Cloud is always "available"
           isSelfChat: isSelfChat, // Flag to identify My Cloud
         };
@@ -107,7 +107,7 @@ export const ChatProvider = ({ children }) => {
   }, [authUser]); // Added authUser dependency
 
   // --- MESSAGES ---
-  
+
   //markAsRead để tự động xóa thông báo khi load tin nhắn
   const markAsRead = useCallback(
     async (partnerId) => {
@@ -118,7 +118,7 @@ export const ChatProvider = ({ children }) => {
         setHomeStats((prev) => ({
           ...prev,
           chats: prev.chats.map((chat) =>
-            chat._id === partnerId ? { ...chat, unreadCount: 0 } : chat 
+            chat._id === partnerId ? { ...chat, unreadCount: 0 } : chat
           ),
         }));
 
@@ -158,7 +158,7 @@ export const ChatProvider = ({ children }) => {
         setIsMessagesLoading(false);
       }
     },
-    [markAsRead] 
+    [markAsRead]
   );
 
   const sendMessage = useCallback(
@@ -203,6 +203,26 @@ export const ChatProvider = ({ children }) => {
     [axiosInstance]
   );
 
+  const reactToMessage = useCallback(
+    async (messageId, emoji) => {
+      try {
+        const res = await axiosInstance.put(`/messages/${messageId}/react`, { emoji });
+        const updatedMessage = res.data;
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId ? { ...msg, reactions: updatedMessage.reactions } : msg
+          )
+        );
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || error.message
+        );
+      }
+    },
+    []
+  );
+
 
   // --- SOCKET LISTENERS FOR MESSAGES ---
   useEffect(() => {
@@ -223,18 +243,18 @@ export const ChatProvider = ({ children }) => {
             if (chatExists) {
               const updatedChats = prev.chats.map((chat) =>
                 chat._id === senderId
-                  ? { 
-                      ...chat, 
-                      unreadCount: (chat.unreadCount || 0) + 1, 
-                      lastMessage: message.text, 
-                      lastMessageTime: message.createdAt 
-                    }
+                  ? {
+                    ...chat,
+                    unreadCount: (chat.unreadCount || 0) + 1,
+                    lastMessage: message.text,
+                    lastMessageTime: message.createdAt
+                  }
                   : chat
               );
               // Sắp xếp lại để người mới nhắn lên đầu
-              return { 
-                ...prev, 
-                chats: updatedChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)) 
+              return {
+                ...prev,
+                chats: updatedChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime))
               };
             } else {
               // Nếu là người lạ nhắn tin, gọi lại API để làm mới danh sách 
@@ -252,9 +272,19 @@ export const ChatProvider = ({ children }) => {
       socket.on("messagesRead", (data) => {
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
-            (msg.senderId === authUser._id || msg.senderId?._id === authUser._id) && 
-            (msg.receiverId === data.partnerId || msg.receiverId?._id === data.partnerId)
+            (msg.senderId === authUser._id || msg.senderId?._id === authUser._id) &&
+              (msg.receiverId === data.partnerId || msg.receiverId?._id === data.partnerId)
               ? { ...msg, isRead: true }
+              : msg
+          )
+        );
+      });
+
+      socket.on("messageReaction", (updatedMessage) => {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === updatedMessage._id
+              ? { ...msg, reactions: updatedMessage.reactions }
               : msg
           )
         );
@@ -263,10 +293,11 @@ export const ChatProvider = ({ children }) => {
       return () => {
         socket.off("newMessage");
         socket.off("messagesRead");
+        socket.off("messageReaction");
       };
     }
 
-  }, [socket, authUser, isSoundEnabled, selectedUser, markAsRead, getHomeStats]); 
+  }, [socket, authUser, isSoundEnabled, selectedUser, markAsRead, getHomeStats]);
   const value = {
     // Contacts & Stats
     allContacts,
@@ -281,6 +312,7 @@ export const ChatProvider = ({ children }) => {
     getMessagesByUserId,
     sendMessage,
     markAsRead,
+    reactToMessage,
 
     // Selected User
     selectedUser,

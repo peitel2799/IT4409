@@ -6,7 +6,8 @@ import {
   getMessagesByUserIdService,
   markMessagesAsReadService,
   markSingleMessageAsReadService,
-  sendMessageService,
+  reactToMessageService,
+  sendMessageService
 } from "../services/message.service.js";
 
 // Helper to emit to all sockets of a user
@@ -110,6 +111,33 @@ export const markMessageAsRead = async (req, res) => {
     res.status(200).json(message);
   } catch (error) {
     console.error("markMessageAsRead:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+export const reactToMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+
+    const updatedMessage = await reactToMessageService(messageId, userId, emoji);
+
+    // Emit socket event to sender and receiver
+    const receiverId = updatedMessage.senderId.toString() === userId.toString()
+      ? updatedMessage.receiverId
+      : updatedMessage.senderId;
+
+    // Notify the other user
+    emitToUser(receiverId, "messageReaction", updatedMessage);
+
+    // Also notify the sender (current user) to update UI immediately if needed (though frontend usually does optimistic update)
+    // Actually, it's better to broadcast to both users involved in the chat so their views are consistent
+    emitToUser(userId, "messageReaction", updatedMessage);
+
+    res.status(200).json(updatedMessage);
+  } catch (error) {
+    console.error("reactToMessage:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

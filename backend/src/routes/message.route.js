@@ -5,6 +5,7 @@ import {
   getMessagesByUserId,
   markAsRead,
   markMessageAsRead,
+  reactToMessage,
   sendMessage,
 } from "../controllers/message.controller.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
@@ -25,5 +26,8 @@ router.post("/read/:partnerId", markAsRead);
 
 // Mark individual message as read
 router.put("/:messageId/read", markMessageAsRead);
+
+// React to a message
+router.put("/:messageId/react", reactToMessage);
 
 export default router;

@@ -23,8 +23,8 @@ export const getMessagesByUserIdService = async (myId, userToChatId) => {
             { senderId: userToChatId, receiverId: myId },
         ],
     })
-    .populate("senderId", "fullName profilePic email")
-    .populate("receiverId", "fullName profilePic email");
+        .populate("senderId", "fullName profilePic email")
+        .populate("receiverId", "fullName profilePic email");
 };
 
 /**
@@ -109,7 +109,7 @@ export const getChatPartnersService = async (userId) => {
     return result;
 };
 //username: partner.username,
-            //avatar: partner.avatar,
+//avatar: partner.avatar,
 /**
  * Mark all messages from a partner as read
  */
@@ -148,5 +148,36 @@ export const markSingleMessageAsReadService = async (messageId) => {
         throw new AppError("Message not found", 404);
     }
 
+    return message;
+};
+
+/**
+ * Add or remove a reaction to/from a message
+ */
+export const reactToMessageService = async (messageId, userId, emoji) => {
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new AppError("Message not found", 404);
+    }
+
+    // Check if user already reacted
+    const existingReactionIndex = message.reactions.findIndex(
+        (reaction) => reaction.userId.toString() === userId.toString()
+    );
+
+    if (existingReactionIndex > -1) {
+        // If same emoji, remove reaction (toggle off)
+        if (message.reactions[existingReactionIndex].emoji === emoji) {
+            message.reactions.splice(existingReactionIndex, 1);
+        } else {
+            // If different emoji, update it
+            message.reactions[existingReactionIndex].emoji = emoji;
+        }
+    } else {
+        // Add new reaction
+        message.reactions.push({ emoji, userId });
+    }
+
+    await message.save();
     return message;
 };
