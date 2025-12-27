@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useChat } from "../../../context/ChatContext";
 import "../../../styles/emoji-picker.css";
 
-const COMMON_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
-
 export default function MessageBubble({ message, isMe, avatar }) {
   const [showReactionBar, setShowReactionBar] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
