@@ -1,5 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Users, Send, Image, X, LogOut, Smile } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  Send,
+  Image,
+  X,
+  LogOut,
+  Smile,
+  Info,
+} from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useGroup } from "../../../context/GroupContext";
 import { useAuth } from "../../../context/AuthContext";
@@ -7,7 +16,11 @@ import { useSocket } from "../../../context/SocketContext";
 import toast from "react-hot-toast";
 import "../../../styles/emoji-picker.css";
 
-export default function GroupChatArea({ onBack }) {
+export default function GroupChatArea({
+  onBack,
+  onToggleInfoSidebar,
+  isInfoSidebarOpen,
+}) {
   const { authUser } = useAuth();
   const { socket } = useSocket();
   const {
@@ -167,12 +180,15 @@ export default function GroupChatArea({ onBack }) {
         </div>
 
         <button
-          onClick={handleLeaveGroup}
-          disabled={isLeaving}
-          className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-          title="Rời nhóm"
+          onClick={onToggleInfoSidebar}
+          className={`p-2 rounded-full transition-colors ${
+            isInfoSidebarOpen
+              ? "bg-purple-100 text-purple-600"
+              : "text-gray-500 hover:bg-gray-100"
+          }`}
+          title="Thông tin nhóm"
         >
-          <LogOut className="w-5 h-5" />
+          <Info className="w-5 h-5" />
         </button>
       </div>
 

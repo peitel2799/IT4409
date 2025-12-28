@@ -5,6 +5,7 @@ import ConversationSidebar from "./ConversationSidebar";
 import ChatArea from "./ChatArea";
 import InfoSidebar from "./InfoSidebar";
 import GroupChatArea from "./GroupChatArea";
+import GroupInfoSidebar from "./GroupInfoSidebar";
 
 export default function ChatDashboard() {
   const { selectedUser, setSelectedUser } = useChat();
@@ -78,7 +79,10 @@ export default function ChatDashboard() {
           <GroupChatArea
             onBack={() => {
               clearSelectedGroup();
+              setIsInfoSidebarOpen(false);
             }}
+            onToggleInfoSidebar={() => setIsInfoSidebarOpen(!isInfoSidebarOpen)}
+            isInfoSidebarOpen={isInfoSidebarOpen}
           />
         ) : (
           <ChatArea
@@ -92,7 +96,7 @@ export default function ChatDashboard() {
         )}
       </div>
 
-      {/* Info Sidebar (only for direct chats) */}
+      {/* Info Sidebar (for direct chats) */}
       {isInfoSidebarOpen && selectedUser && !selectedGroup && (
         <>
           <div
@@ -104,6 +108,19 @@ export default function ChatDashboard() {
               chat={selectedUser}
               onClose={() => setIsInfoSidebarOpen(false)}
             />
+          </div>
+        </>
+      )}
+
+      {/* Group Info Sidebar */}
+      {isInfoSidebarOpen && selectedGroup && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/20 z-40 xl:hidden"
+            onClick={() => setIsInfoSidebarOpen(false)}
+          />
+          <div className="fixed right-0 top-0 bottom-0 w-[280px] z-50 xl:relative xl:w-80 h-full flex-shrink-0 border-l border-gray-50 bg-white shadow-xl xl:shadow-none">
+            <GroupInfoSidebar onClose={() => setIsInfoSidebarOpen(false)} />
           </div>
         </>
       )}
