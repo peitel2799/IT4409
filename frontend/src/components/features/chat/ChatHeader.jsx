@@ -2,6 +2,7 @@ import { Phone, Video, Sidebar, ChevronLeft } from "lucide-react";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useChat } from "../../../context/ChatContext";
+import { OpenCallWindow } from "../../../../utils/window";
 
 export default function ChatHeader({
   chat,
@@ -30,11 +31,6 @@ export default function ChatHeader({
 
     const receiverId = chat.id || chat._id;
 
-    if (!onlineUsers.includes(receiverId)) {
-      alert("User is offline. Cannot start call.");
-      return;
-    }
-
     socket.emit("call:initiate", {
       receiverId,
       callerInfo: {
@@ -45,24 +41,13 @@ export default function ChatHeader({
       isVideo,
     });
 
-    const width = 900;
-    const height = 650;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
-
-    const params = new URLSearchParams({
+    OpenCallWindow({
       name: chat.fullName,
       avatar: avatarUrl,
       id: receiverId,
       video: isVideo ? "true" : "false",
       caller: "true",
     });
-
-    window.open(
-      `/call-window?${params.toString()}`,
-      "_blank",
-      `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=no,resizable=yes`
-    );
   };
 
   return (

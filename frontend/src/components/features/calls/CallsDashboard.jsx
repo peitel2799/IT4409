@@ -4,7 +4,7 @@ import { axiosInstance } from "../../../lib/axios";
 import { useChat } from "../../../context/ChatContext";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
-
+import { OpenCallWindow } from '../../../../utils/window'; 
 import CallsHeader from "./CallsHeader";
 import CallsList from "./CallsList";
 
@@ -34,9 +34,30 @@ export default function CallsDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchCallHistory();
-  }, [fetchCallHistory]);
+    useEffect(() => {
+        //Lấy dữ liệu lần đầu khi vào trang
+        fetchCallHistory();
+
+        //Lắng nghe sự kiện từ socket để cập nhật lại danh sách
+        if (socket) {
+          const handleRefreshHistory = () => {
+            console.log("Call ended, refreshing history...");
+            fetchCallHistory(); // Gọi lại hàm lấy dữ liệu từ API
+          };
+
+          //Lắng nghe khi cuộc gọi kết thúc hoặc bị từ chối
+          socket.on("call:ended", handleRefreshHistory);
+          socket.on("call:rejected", handleRefreshHistory);
+          socket.on("call:busy", handleRefreshHistory);
+
+          // Cleanup function để tránh rò rỉ bộ nhớ khi component bị unmount
+          return () => {
+            socket.off("call:ended", handleRefreshHistory);
+            socket.off("call:rejected", handleRefreshHistory);
+            socket.off("call:busy", handleRefreshHistory);
+          };
+        }
+      }, [fetchCallHistory, socket]);
 
   // Filter calls
   const filteredCalls = calls.filter(call => {
@@ -64,43 +85,21 @@ export default function CallsDashboard() {
   };
 
   const openCallWindow = (contact, isVideo) => {
-    // Emit call:initiate from main window
-    if (socket && authUser) {
-      socket.emit("call:initiate", {
-        receiverId: contact._id,
-        callerInfo: {
-          id: authUser._id,
-          name: authUser.fullName,
-          avatar: authUser.profilePic,
-        },
-        isVideo,
-      });
-    }
+      const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName)}`;
 
-    const width = 900;
-    const height = 650;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
-
-    const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName)}`;
-
-    const params = new URLSearchParams({
-      name: contact.fullName,
-      avatar: avatarUrl,
-      id: contact._id,
-      video: isVideo ? "true" : "false",
-      caller: "true"
-    });
-
-    window.open(
-      `/call-window?${params.toString()}`,
-      '_blank',
-      `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=no,resizable=yes`
-    );
+      const params = {
+        name: contact.fullName,
+        avatar: avatarUrl,
+        id: contact._id,
+        video: isVideo ? "true" : "false",
+        caller: "true"
+      };
+ 
+    OpenCallWindow(params); 
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <CallsHeader 
         filter={filter} 
         setFilter={setFilter} 
@@ -116,6 +115,7 @@ export default function CallsDashboard() {
           onVideo={(call) => openCallWindow(call.contact, true)}
         />
       </div>
-    </>
+    </div>
   );
+
 }

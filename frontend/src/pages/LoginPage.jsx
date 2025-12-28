@@ -39,7 +39,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="w-full min-h-screen md:min-h-[600px] flex flex-col md:flex-row bg-white overflow-y-auto">
+    <div className="w-full flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden min-h-[600px]">
       <div className="w-full md:w-1/2 p-8 flex items-center justify-center border-r border-gray-200">
         <div className="w-full max-w-md">
           <div className="text-center mb-6 md:mb-8">

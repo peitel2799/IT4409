@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Phone, PhoneOff, Video, X } from "lucide-react";
 import { useCall } from "../context/CallContext";
+import { OpenCallWindow } from "../../utils/window";
 
 export default function IncomingCallModal() {
   const { incomingCall, rejectCall, setIncomingCall } = useCall();
@@ -11,7 +12,7 @@ export default function IncomingCallModal() {
     if (incomingCall) {
       // Try to play ringtone, but gracefully handle if file doesn't exist
       try {
-        ringtoneRef.current = new Audio("/ringtone.mp3");
+        ringtoneRef.current = new Audio("/amthanhcuocgoiden.mp3");
         ringtoneRef.current.loop = true;
         ringtoneRef.current.volume = 0.5;
         ringtoneRef.current.play().catch((err) => {
@@ -36,37 +37,23 @@ export default function IncomingCallModal() {
   const { callId, callerId, callerInfo, isVideo } = incomingCall;
 
   const handleAccept = () => {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-    }
-
-    // Clear incoming call state - the call window will handle the actual accept
+    if (ringtoneRef.current) ringtoneRef.current.pause();
     setIncomingCall(null);
 
-    // Open call window - it will emit call:accept when ready
-    const width = 900;
-    const height = 650;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
-
-    const params = new URLSearchParams({
+    const params = {
       name: callerInfo.name,
       avatar: callerInfo.avatar || "",
       id: callerId,
       video: isVideo ? "true" : "false",
       receiver: "true",
       callId: callId,
-    });
+    };
 
-    window.open(
-      `/call-window?${params.toString()}`,
-      "_blank",
-      `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=no,resizable=yes`
-    );
+    OpenCallWindow(params);
   };
 
-  const handleReject = () => {
-    if (ringtoneRef.current) {
+    const handleReject = () => {
+      if (ringtoneRef.current) {
       ringtoneRef.current.pause();
     }
     rejectCall(callId, callerId);
