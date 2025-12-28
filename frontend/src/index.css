@@ -4,16 +4,37 @@
 
 :root {
   --primary-color: #ec4899;
-  /* Pink-500 */
   --primary-hover: #db2777;
-  /* Pink-600 */
   --bg-soft: #fdf2f8;
-  /* Pink-50 */
   --ring-color: rgba(236, 72, 153, 0.2);
 }
 
-
-
 html {
   scroll-behavior: smooth;
+}
+
+.typing-dots::after {
+  content: '';
+  animation: typing-dots 1.4s infinite;
+}
+
+@keyframes typing-dots {
+
+  0%,
+  20% {
+    content: '';
+  }
+
+  40% {
+    content: '.';
+  }
+
+  60% {
+    content: '..';
+  }
+
+  80%,
+  100% {
+    content: '...';
+  }
 }

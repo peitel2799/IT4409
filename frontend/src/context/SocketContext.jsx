@@ -3,6 +3,8 @@ import {
     useContext,
     useState,
     useEffect,
+    useCallback,
+    useRef,
 } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "./AuthContext";
@@ -13,9 +15,10 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
+    const [typingUsers, setTypingUsers] = useState({});
     const { authUser } = useAuth();
+    const typingTimeoutRef = useRef(null);
 
-    // Initialize socket connection when user is authenticated
     useEffect(() => {
         if (authUser) {
             const BASE_URL =
@@ -40,6 +43,18 @@ export const SocketProvider = ({ children }) => {
                 setOnlineUsers(userIds);
             });
 
+            newSocket.on("user:typing", ({ senderId }) => {
+                setTypingUsers(prev => ({ ...prev, [senderId]: true }));
+            });
+
+            newSocket.on("user:stop-typing", ({ senderId }) => {
+                setTypingUsers(prev => {
+                    const updated = { ...prev };
+                    delete updated[senderId];
+                    return updated;
+                });
+            });
+
             setSocket(newSocket);
 
             return () => {
@@ -48,7 +63,6 @@ export const SocketProvider = ({ children }) => {
                 setIsConnected(false);
             };
         } else {
-            // Disconnect socket when user logs out
             if (socket) {
                 socket.disconnect();
                 setSocket(null);
@@ -57,10 +71,37 @@ export const SocketProvider = ({ children }) => {
         }
     }, [authUser]);
 
+    const emitTyping = useCallback((receiverId) => {
+        if (!socket) return;
+
+        socket.emit("user:typing", { receiverId });
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        typingTimeoutRef.current = setTimeout(() => {
+            socket.emit("user:stop-typing", { receiverId });
+        }, 2000);
+    }, [socket]);
+
+    const stopTyping = useCallback((receiverId) => {
+        if (!socket) return;
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        socket.emit("user:stop-typing", { receiverId });
+    }, [socket]);
+
     const value = {
         socket,
         onlineUsers,
         isConnected,
+        typingUsers,
+        emitTyping,
+        stopTyping,
     };
 
     return (

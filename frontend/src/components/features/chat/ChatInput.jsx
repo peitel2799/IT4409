@@ -3,20 +3,8 @@ import { Image, Loader2, Send, Smile, X } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useChat } from "../../../context/ChatContext";
+import { useSocket } from "../../../context/SocketContext";
 import "../../../styles/emoji-picker.css";
-
-// Helper: upload image to server/cloud (replace with your real API endpoint)
-// async function uploadImage(file) {
-
-//   // Example: POST to your backend or directly to Cloudinary
-//   const res = await fetch("/api/upload", {
-//     method: "POST",
-//     body: formData,
-//   });
-//   if (!res.ok) throw new Error("Image upload failed");
-//   const data = await res.json();
-//   return data.url; // The image URL returned by your server/cloud
-// }
 
 export default function ChatInput({ chat }) {
   const [text, setText] = useState("");
@@ -24,20 +12,35 @@ export default function ChatInput({ chat }) {
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const { sendMessage } = useChat();
+  const { emitTyping, stopTyping } = useSocket();
   const [isEmojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const fileInputRef = useRef(null);
+
+  const receiverId = chat?._id || chat?.id;
+
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    if (receiverId && e.target.value) {
+      emitTyping(receiverId);
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
     if ((!text.trim() && !imageFile) || !chat) return;
     setLoading(true);
+
+    if (receiverId) {
+      stopTyping(receiverId);
+    }
+
     try {
       const formData = new FormData();
       formData.append('text', text.trim());
       if (imageFile) {
         formData.append("image", imageFile);
       }
-      await sendMessage(chat._id || chat.id, formData);
+      await sendMessage(receiverId, formData);
       toast.success("Sent");
       setText("");
       setPreviewImage(null);
@@ -57,7 +60,7 @@ export default function ChatInput({ chat }) {
       toast.error("Please select an image file");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
       toast.error("Image size must be less than 5MB");
       return;
     }
@@ -69,7 +72,7 @@ export default function ChatInput({ chat }) {
     fileReader.readAsDataURL(file);
   };
 
-  const removeImage = (e) => {
+  const removeImage = () => {
     setPreviewImage(null);
     setImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -91,12 +94,11 @@ export default function ChatInput({ chat }) {
         </div>
       )}
       <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100">
-        {/* Image preview section */}
         {previewImage && (
           <div className="relative inline-block ml-3">
             <img
               src={previewImage}
-              alt="preview image"
+              alt="preview"
               className="w-20 h-20 object-cover rounded-lg border border-pink-500"
             />
             <button
@@ -110,7 +112,6 @@ export default function ChatInput({ chat }) {
         )}
 
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-2 rounded-[24px] focus-within:bg-white focus-within:ring-2 focus-within:ring-pink-100 focus-within:border-pink-300 transition-all shadow-sm">
-
           <input
             type="file"
             accept="image/*"
@@ -120,24 +121,25 @@ export default function ChatInput({ chat }) {
           />
           <button
             type="button"
-            className={`p-2 text-gray-400 hover:text-pink-500 transition-colors
-                    ${previewImage ? 'text-pink-500' : 'text-gray-400'}`
-            }
+            className={`p-2 text-gray-400 hover:text-pink-500 transition-colors ${previewImage ? 'text-pink-500' : 'text-gray-400'}`}
             onClick={() => fileInputRef.current?.click()}
           >
             <Image size={20} />
           </button>
 
-
           <input
             type="text"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             placeholder="Type a message..."
             className="flex-1 bg-transparent px-2 py-2 text-sm focus:outline-none text-gray-700 placeholder:text-gray-400"
           />
 
-          <button type="button" onClick={() => setEmojiPickerOpen(!isEmojiPickerOpen)} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+          <button
+            type="button"
+            onClick={() => setEmojiPickerOpen(!isEmojiPickerOpen)}
+            className="p-2 text-gray-400 hover:text-yellow-500 transition-colors"
+          >
             <Smile size={20} />
           </button>
 

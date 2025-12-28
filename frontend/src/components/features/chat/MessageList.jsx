@@ -2,6 +2,7 @@ import { LoaderIcon } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useChat } from "../../../context/ChatContext";
+import { useSocket } from "../../../context/SocketContext";
 import MessageBubble from "./MessageBubble";
 
 function formatDate(dateStr) {
@@ -23,18 +24,44 @@ function formatTime(dateStr) {
   });
 }
 
+function TypingIndicator({ avatar }) {
+  return (
+    <div className="flex items-end mb-2 gap-2">
+      <img
+        src={avatar}
+        alt="Avatar"
+        className="w-8 h-8 rounded-full border border-gray-100 object-cover mb-1"
+      />
+      <div className="bg-white border border-gray-100 rounded-[20px] rounded-tl-sm px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-1">
+          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MessageList({ chat }) {
   const messagesEndRef = useRef(null);
   const { messages, getMessagesByUserId, isMessagesLoading } = useChat();
   const { authUser } = useAuth();
+  const { typingUsers } = useSocket();
+
+  const chatId = chat?.id || chat?._id;
+  const isPartnerTyping = typingUsers && typingUsers[chatId];
+
+  const partnerAvatar = chat?.profilePic ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(chat?.fullName || "U")}&background=random`;
 
   useEffect(() => {
-    if (chat?.id || chat?._id) getMessagesByUserId(chat.id || chat._id);
+    if (chatId) getMessagesByUserId(chatId);
   }, [chat, getMessagesByUserId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isPartnerTyping]);
 
   const groupedMessages = useMemo(() => {
     const groups = {};
@@ -59,6 +86,11 @@ export default function MessageList({ chat }) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-sm">
         No messages yet.
+        {isPartnerTyping && (
+          <div className="absolute bottom-4 left-4">
+            <TypingIndicator avatar={partnerAvatar} />
+          </div>
+        )}
       </div>
     );
   }
@@ -97,6 +129,11 @@ export default function MessageList({ chat }) {
           </div>
         </div>
       ))}
+
+      {isPartnerTyping && (
+        <TypingIndicator avatar={partnerAvatar} />
+      )}
+
       <div ref={messagesEndRef} />
     </div>
   );
