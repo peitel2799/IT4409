@@ -106,6 +106,40 @@ export const GroupProvider = ({ children }) => {
     }
   }, []);
 
+  // React to a group message
+  const reactToGroupMessage = useCallback(
+    async (messageId, emoji) => {
+      try {
+        const response = await axiosInstance.put(
+          `/messages/${messageId}/react`,
+          { emoji }
+        );
+
+        const updatedMessage = response.data;
+
+        // Update message in state
+        setGroupMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId
+              ? { ...msg, reactions: updatedMessage.reactions }
+              : msg
+          )
+        );
+
+        // Emit socket event to notify other group members
+        if (socket && selectedGroup) {
+          socket.emit("group:messageReaction", {
+            groupId: selectedGroup._id,
+            message: updatedMessage,
+          });
+        }
+      } catch (error) {
+        console.error("Error reacting to message:", error);
+      }
+    },
+    [socket, selectedGroup]
+  );
+
   // Leave a group
   const leaveGroup = useCallback(
     async (groupId) => {
@@ -214,14 +248,29 @@ export const GroupProvider = ({ children }) => {
       );
     };
 
+    // Handle message reaction in group
+    const handleGroupMessageReaction = ({ groupId, message }) => {
+      if (selectedGroup?._id === groupId) {
+        setGroupMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === message._id
+              ? { ...msg, reactions: message.reactions }
+              : msg
+          )
+        );
+      }
+    };
+
     socket.on("group:newMessage", handleNewGroupMessage);
     socket.on("group:created", handleGroupCreated);
     socket.on("group:memberLeft", handleMemberLeft);
+    socket.on("group:messageReaction", handleGroupMessageReaction);
 
     return () => {
       socket.off("group:newMessage", handleNewGroupMessage);
       socket.off("group:created", handleGroupCreated);
       socket.off("group:memberLeft", handleMemberLeft);
+      socket.off("group:messageReaction", handleGroupMessageReaction);
     };
   }, [socket, authUser, selectedGroup]);
 
@@ -245,6 +294,7 @@ export const GroupProvider = ({ children }) => {
     sendGroupMessage,
     leaveGroup,
     setSelectedGroup,
+    reactToGroupMessage,
   };
 
   return (

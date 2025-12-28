@@ -260,6 +260,14 @@ io.on("connection", (socket) => {
     });
   });
 
+  // Group message reaction
+  socket.on("group:messageReaction", ({ groupId, message }) => {
+    socket.to(`group:${groupId}`).emit("group:messageReaction", {
+      groupId,
+      message,
+    });
+  });
+
   socket.on("disconnect", async () => {
     console.log("A user disconnected", socket.user.fullName);
 

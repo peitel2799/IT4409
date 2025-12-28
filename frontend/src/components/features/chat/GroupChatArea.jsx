@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Users, Send, Image, X, LogOut } from "lucide-react";
+import { ArrowLeft, Users, Send, Image, X, LogOut, Smile } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 import { useGroup } from "../../../context/GroupContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useSocket } from "../../../context/SocketContext";
 import toast from "react-hot-toast";
+import "../../../styles/emoji-picker.css";
 
 export default function GroupChatArea({ onBack }) {
   const { authUser } = useAuth();
@@ -15,6 +17,7 @@ export default function GroupChatArea({ onBack }) {
     sendGroupMessage,
     leaveGroup,
     clearSelectedGroup,
+    reactToGroupMessage,
   } = useGroup();
 
   const [text, setText] = useState("");
@@ -22,9 +25,30 @@ export default function GroupChatArea({ onBack }) {
   const [imagePreview, setImagePreview] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const reactionPickerRef = useRef(null);
+
+  // Close reaction picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        reactionPickerRef.current &&
+        !reactionPickerRef.current.contains(event.target)
+      ) {
+        setActiveReactionMessageId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleReaction = (messageId, emoji) => {
+    reactToGroupMessage(messageId, emoji);
+    setActiveReactionMessageId(null);
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -176,10 +200,22 @@ export default function GroupChatArea({ onBack }) {
                 senderName
               )}&background=random`;
 
+            // Group reactions by emoji
+            const reactionCounts = (message.reactions || []).reduce(
+              (acc, curr) => {
+                acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
+                return acc;
+              },
+              {}
+            );
+            const hasReactions = Object.keys(reactionCounts).length > 0;
+
             return (
               <div
                 key={message._id}
-                className={`flex gap-2 ${isOwn ? "flex-row-reverse" : ""}`}
+                className={`flex gap-2 group relative ${
+                  isOwn ? "flex-row-reverse" : ""
+                }`}
               >
                 {!isOwn && (
                   <img
@@ -189,7 +225,7 @@ export default function GroupChatArea({ onBack }) {
                   />
                 )}
                 <div
-                  className={`max-w-[70%] ${
+                  className={`max-w-[70%] relative ${
                     isOwn ? "items-end" : "items-start"
                   }`}
                 >
@@ -198,6 +234,32 @@ export default function GroupChatArea({ onBack }) {
                       {senderName}
                     </p>
                   )}
+
+                  {/* Reactions Badge */}
+                  {hasReactions && (
+                    <div
+                      className={`absolute -top-2 ${
+                        isOwn
+                          ? "left-0 -translate-x-1/2"
+                          : "right-0 translate-x-1/2"
+                      } z-10 flex gap-0.5 bg-white border border-gray-100 rounded-full px-1.5 py-0.5 shadow-sm`}
+                    >
+                      {Object.entries(reactionCounts).map(([emoji, count]) => (
+                        <div
+                          key={emoji}
+                          className="flex items-center text-[10px] text-gray-600"
+                        >
+                          <span className="mr-0.5">{emoji}</span>
+                          {count > 1 && (
+                            <span className="font-medium text-gray-400">
+                              {count}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div
                     className={`px-3 py-2 rounded-2xl ${
                       isOwn
@@ -229,6 +291,53 @@ export default function GroupChatArea({ onBack }) {
                     })}
                   </p>
                 </div>
+
+                {/* Reaction Button */}
+                <div
+                  className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center mb-1 ${
+                    isOwn ? "mr-1" : "ml-1"
+                  } ${
+                    activeReactionMessageId === message._id
+                      ? "!opacity-100"
+                      : ""
+                  }`}
+                >
+                  <button
+                    onClick={() =>
+                      setActiveReactionMessageId(
+                        activeReactionMessageId === message._id
+                          ? null
+                          : message._id
+                      )
+                    }
+                    className="p-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-purple-500 border border-gray-100 shadow-sm transition-colors"
+                  >
+                    <Smile size={14} />
+                  </button>
+                </div>
+
+                {/* Reaction Picker */}
+                {activeReactionMessageId === message._id && (
+                  <div
+                    ref={reactionPickerRef}
+                    className={`absolute bottom-full mb-1 ${
+                      isOwn ? "right-10" : "left-10"
+                    } z-50`}
+                  >
+                    <EmojiPicker
+                      className="custom-emoji-picker"
+                      previewConfig={{ showPreview: false }}
+                      reactionsDefaultOpen={true}
+                      style={{ backgroundColor: "#f3e8ff" }}
+                      onReactionClick={(data) =>
+                        handleReaction(message._id, data.emoji)
+                      }
+                      onEmojiClick={(data) =>
+                        handleReaction(message._id, data.emoji)
+                      }
+                    />
+                  </div>
+                )}
               </div>
             );
           })
