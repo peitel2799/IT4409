@@ -25,7 +25,7 @@ export default function FriendsHeader({
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-gray-100 rounded-xl text-xs w-full md:w-48 transition-all outline-none focus:bg-white focus:border-pink-200"
+              className="pl-9 pr-3 py-2 bg-gray-100 rounded-xl text-xs w-full md:w-48 transition-all outline-none focus:border-pink-400 focus:outline-pink-200"
             />
           </div>
         )}

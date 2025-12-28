@@ -4,6 +4,7 @@ import {
     useContext,
     useEffect,
     useState,
+    useMemo,
 } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
@@ -19,7 +20,7 @@ export const ChatProvider = ({ children }) => {
     const [messages, setMessages] = useState([]);
 
     // UI State
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUser, _setSelectedUser] = useState(null);
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [isMessagesLoading, setIsMessagesLoading] = useState(false);
     const [isSoundEnabled, setIsSoundEnabled] = useState(
@@ -28,6 +29,38 @@ export const ChatProvider = ({ children }) => {
 
     const { authUser } = useAuth();
     const { socket } = useSocket();
+
+    //HỘI THOẠI ẢO
+    const setSelectedUser = useCallback((user) => {
+        _setSelectedUser(user);
+        if (!user) return;
+
+        // Cập nhật Sidebar ngay lập tức để hiện tên người vừa nhấn chat
+        setHomeStats((prev) => {
+            const isExist = prev.chats.some((chat) => chat._id === user._id);
+            
+            if (!isExist) {
+                // Tạo một hội thoại tạm thời nếu chưa có trong danh sách
+                const newChatEntry = {
+                    ...user,
+                    _id: user._id,
+                    fullName: user.fullName || user.username || "Unknown",
+                    profilePic: user.profilePic || user.avatar,
+                    lastMessage: "", 
+                    lastMessageTime: new Date().toISOString(),
+                    unreadCount: 0,
+                    isOnline: user.isOnline || false,
+                    isSelfChat: authUser?._id === user._id
+                };
+                
+                return {
+                    ...prev,
+                    chats: [newChatEntry, ...prev.chats] // Đưa lên đầu danh sách
+                };
+            }
+            return prev;
+        });
+    }, [authUser]);
 
     // --- SOUND TOGGLE ---
     const toggleSound = useCallback(() => {

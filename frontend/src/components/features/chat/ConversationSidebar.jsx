@@ -16,14 +16,19 @@ export default function ConversationSidebar({ selectedChat, onChatSelect }) {
 
   // Logic lọc danh sách
   const filteredChats = chats.filter((chat) => {
-    //Lọc theo tab 
+    //Lọc theo tab (Tất cả hoặc Chưa đọc)
     const matchesFilter = filter === "unread" ? chat.unreadCount > 0 : true;
 
     //Lọc theo từ khóa tìm kiếm 
     const searchLow = searchQuery.toLowerCase();
-    const keySearch = chat.name.toLowerCase().includes(searchLow) || (chat.lastMessage || "").toLowerCase().includes(searchLow);
+    
+    // Kiểm tra Tên
+    const matchesName = (chat.fullName || chat.name || "").toLowerCase().includes(searchLow);
+    
+    // Kiểm tra email
+    const matchesEmail = (chat.email || "").toLowerCase().includes(searchLow);
 
-    return matchesFilter && keySearch;
+    return matchesFilter && (matchesName || matchesEmail);
   });
 
   return (

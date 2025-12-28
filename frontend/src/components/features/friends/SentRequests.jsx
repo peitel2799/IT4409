@@ -33,10 +33,12 @@ export default function SentRequests() {
 
     if (filteredList.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <div className="flex-1 flex flex-col items-center justify-center h-full py-20 text-gray-400">
                 <Search size={48} className="opacity-20 mb-4" />
-                <p className="text-sm italic">
-                    {searchQuery ? "No requests found matching your search." : "No pending requests sent."}
+                <p className="text-sm italic text-center px-4">
+                    {searchQuery 
+                        ? `No requests found for "${searchQuery}"` 
+                        : "No pending requests sent."}
                 </p>
             </div>
         );
