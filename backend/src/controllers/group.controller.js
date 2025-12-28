@@ -4,6 +4,15 @@ import {
   getGroupByIdService,
   leaveGroupService,
 } from "../services/group.service.js";
+import { getReceiverSocketIds, io } from "../lib/socket.js";
+
+// Helper to emit to all sockets of a user
+function emitToUser(userId, event, data) {
+  const socketIds = getReceiverSocketIds(userId);
+  socketIds.forEach((socketId) => {
+    io.to(socketId).emit(event, data);
+  });
+}
 
 /**
  * Create a new group
@@ -19,6 +28,13 @@ export const createGroup = async (req, res) => {
       description,
       memberIds,
       avatar,
+    });
+
+    // Notify all members (except creator) about the new group
+    group.members.forEach((member) => {
+      if (member._id.toString() !== userId.toString()) {
+        emitToUser(member._id, "group:created", { group });
+      }
     });
 
     res.status(201).json({
@@ -91,6 +107,16 @@ export const leaveGroup = async (req, res) => {
     const { groupId } = req.params;
 
     const result = await leaveGroupService(groupId, userId);
+
+    // Notify remaining members about the user leaving
+    if (!result.deleted && result.group) {
+      result.group.members.forEach((memberId) => {
+        emitToUser(memberId, "group:memberLeft", {
+          groupId,
+          userId,
+        });
+      });
+    }
 
     res.status(200).json({
       success: true,

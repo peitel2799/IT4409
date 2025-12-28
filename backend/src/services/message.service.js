@@ -56,7 +56,9 @@ export const sendMessageService = async (senderId, receiverId, text, imageUrl) =
  * Get all chat partners for a user with last message info and unread count
  */
 export const getChatPartnersService = async (userId) => {
+    // Only get direct messages (exclude group messages which have groupId)
     const messages = await Message.find({
+        groupId: null,
         $or: [{ senderId: userId }, { receiverId: userId }],
     }).sort({ createdAt: -1 });
 
@@ -64,6 +66,9 @@ export const getChatPartnersService = async (userId) => {
     const chatPartnerMap = new Map();
 
     messages.forEach((msg) => {
+        // Skip messages without receiverId (safety check)
+        if (!msg.receiverId) return;
+
         const partnerId = msg.senderId.toString() === userId.toString()
             ? msg.receiverId.toString()
             : msg.senderId.toString();

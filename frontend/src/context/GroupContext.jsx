@@ -154,6 +154,7 @@ export const GroupProvider = ({ children }) => {
   useEffect(() => {
     if (!socket || !authUser) return;
 
+    // Handle new group message
     const handleNewGroupMessage = ({ groupId, message }) => {
       // Skip if it's our own message (already added via optimistic update)
       if (
@@ -176,10 +177,51 @@ export const GroupProvider = ({ children }) => {
       );
     };
 
+    // Handle new group created (when someone adds you to a group)
+    const handleGroupCreated = ({ group }) => {
+      setGroups((prev) => {
+        // Avoid duplicates
+        if (prev.some((g) => g._id === group._id)) {
+          return prev;
+        }
+        return [group, ...prev];
+      });
+    };
+
+    // Handle member left group
+    const handleMemberLeft = ({ groupId, userId }) => {
+      // Update group members list if we're viewing that group
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup((prev) => ({
+          ...prev,
+          members: prev.members.filter((m) => m._id !== userId && m !== userId),
+        }));
+      }
+
+      // Update groups list
+      setGroups((prev) =>
+        prev.map((g) => {
+          if (g._id === groupId) {
+            return {
+              ...g,
+              members: g.members.filter(
+                (m) => m._id !== userId && m !== userId
+              ),
+            };
+          }
+          return g;
+        })
+      );
+    };
+
     socket.on("group:newMessage", handleNewGroupMessage);
+    socket.on("group:created", handleGroupCreated);
+    socket.on("group:memberLeft", handleMemberLeft);
 
     return () => {
       socket.off("group:newMessage", handleNewGroupMessage);
+      socket.off("group:created", handleGroupCreated);
+      socket.off("group:memberLeft", handleMemberLeft);
     };
   }, [socket, authUser, selectedGroup]);
 
