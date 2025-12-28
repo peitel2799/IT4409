@@ -65,7 +65,7 @@ export const CallProvider = ({ children }) => {
   // Get user media logic
   const getUserMedia = useCallback(async (isVideo = true) => {
     if (localStreamRef.current) return localStreamRef.current;
-    
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo ? { facingMode: "user" } : false,
@@ -82,87 +82,143 @@ export const CallProvider = ({ children }) => {
   }, []);
 
   // Create peer connection
-  const createPeerConnection = useCallback((recipientId, callId) => {
-    if (peerConnectionRef.current) return peerConnectionRef.current;
+  const createPeerConnection = useCallback(
+    (recipientId, callId) => {
+      if (peerConnectionRef.current) return peerConnectionRef.current;
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+      const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    pc.onicecandidate = (event) => {
-      if (event.candidate && socketRef.current) {
-        socketRef.current.emit("webrtc:ice-candidate", { recipientId, candidate: event.candidate, callId });
-      }
-    };
+      pc.onicecandidate = (event) => {
+        if (event.candidate && socketRef.current) {
+          socketRef.current.emit("webrtc:ice-candidate", {
+            recipientId,
+            candidate: event.candidate,
+            callId,
+          });
+        }
+      };
 
-    pc.ontrack = (event) => {
-      if (event.streams[0]) setRemoteStream(event.streams[0]);
-    };
+      pc.ontrack = (event) => {
+        if (event.streams[0]) setRemoteStream(event.streams[0]);
+      };
 
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "connected") {
-        setCallState((prev) => ({ ...prev, callStatus: "connected" }));
-      } else if (["disconnected", "failed", "closed"].includes(pc.connectionState)) {
-        endCall(recipientId, callId);
-      }
-    };
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "connected") {
+          setCallState((prev) => ({ ...prev, callStatus: "connected" }));
+        } else if (
+          ["disconnected", "failed", "closed"].includes(pc.connectionState)
+        ) {
+          endCall(recipientId, callId);
+        }
+      };
 
-    peerConnectionRef.current = pc;
-    return pc;
-  }, [socket]);
+      peerConnectionRef.current = pc;
+      return pc;
+    },
+    [socket]
+  );
 
   // Initiate a call
-  const initiateCall = useCallback(async (receiverId, receiverInfo, isVideo = true) => {
-    const stream = await getUserMedia(isVideo);
-    if (!stream || !socketRef.current) return false;
+  const initiateCall = useCallback(
+    async (receiverId, receiverInfo, isVideo = true) => {
+      const stream = await getUserMedia(isVideo);
+      if (!stream || !socketRef.current) return false;
 
-    setCallState({
-      isInCall: true,
-      isRinging: true,
-      isReceivingCall: false,
-      callId: null,
-      callType: isVideo ? "video" : "audio",
-      remoteUser: receiverInfo,
-      callStatus: "ringing",
-    });
+      setCallState({
+        isInCall: true,
+        isRinging: true,
+        isReceivingCall: false,
+        callId: null,
+        callType: isVideo ? "video" : "audio",
+        remoteUser: receiverInfo,
+        callStatus: "ringing",
+      });
 
-    socketRef.current.emit("call:initiate", {
-      receiverId,
-      callerInfo: { id: authUser._id, name: authUser.fullName, avatar: authUser.profilePic },
-      isVideo,
-    });
-    return true;
-  }, [authUser, getUserMedia]);
+      socketRef.current.emit("call:initiate", {
+        receiverId,
+        callerInfo: {
+          id: authUser._id,
+          name: authUser.fullName,
+          avatar: authUser.profilePic,
+        },
+        isVideo,
+      });
+      return true;
+    },
+    [authUser, getUserMedia]
+  );
 
   // Accept incoming call
-  const acceptCall = useCallback(async (callId, callerId, callerInfo, isVideo) => {
-    await getUserMedia(isVideo);
+  const acceptCall = useCallback(
+    async (callId, callerId, callerInfo, isVideo) => {
+      await getUserMedia(isVideo);
+      setCallState({
+        isInCall: true,
+        isRinging: false,
+        isReceivingCall: false,
+        callId,
+        callType: isVideo ? "video" : "audio",
+        remoteUser: callerInfo,
+        callStatus: "connecting",
+      });
+      setIncomingCall(null);
+      socketRef.current.emit("call:accept", {
+        callId,
+        callerId,
+        receiverInfo: {
+          id: authUser._id,
+          name: authUser.fullName,
+          avatar: authUser.profilePic,
+        },
+      });
+    },
+    [authUser, getUserMedia]
+  );
+
+  const endCall = useCallback(
+    (recipientId, callId) => {
+      if (socketRef.current && recipientId && callId) {
+        socketRef.current.emit("call:end", { callId, recipientId });
+      }
+      if (peerConnectionRef.current) peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+      stopStream(localStreamRef.current);
+      localStreamRef.current = null;
+      setLocalStream(null);
+      setRemoteStream(null);
+      setCallState({
+        isInCall: false,
+        isRinging: false,
+        isReceivingCall: false,
+        callId: null,
+        callType: null,
+        remoteUser: null,
+        callStatus: "idle",
+      });
+    },
+    [stopStream]
+  );
+
+  // Reject an incoming call
+  const rejectCall = useCallback((callId, callerId) => {
+    if (socketRef.current && callId && callerId) {
+      socketRef.current.emit("call:reject", {
+        callId,
+        callerId,
+        reason: "Call declined",
+      });
+    }
+    setIncomingCall(null);
     setCallState({
-      isInCall: true,
+      isInCall: false,
       isRinging: false,
       isReceivingCall: false,
-      callId,
-      callType: isVideo ? "video" : "audio",
-      remoteUser: callerInfo,
-      callStatus: "connecting",
+      callId: null,
+      callType: null,
+      remoteUser: null,
+      callStatus: "idle",
     });
-    setIncomingCall(null);
-    socketRef.current.emit("call:accept", {
-      callId, callerId,
-      receiverInfo: { id: authUser._id, name: authUser.fullName, avatar: authUser.profilePic }
-    });
-  }, [authUser, getUserMedia]);
-
-  const endCall = useCallback((recipientId, callId) => {
-    if (socketRef.current && recipientId && callId) {
-      socketRef.current.emit("call:end", { callId, recipientId });
-    }
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    peerConnectionRef.current = null;
-    stopStream(localStreamRef.current);
-    localStreamRef.current = null;
-    setLocalStream(null);
-    setRemoteStream(null);
-    setCallState({ isInCall: false, isRinging: false, isReceivingCall: false, callId: null, callType: null, remoteUser: null, callStatus: "idle" });
-  }, [stopStream]);
+  }, []);
 
   // Socket event listeners
   useEffect(() => {
@@ -170,7 +226,9 @@ export const CallProvider = ({ children }) => {
 
     const handleWebRTCOffer = async ({ callId, senderId, offer }) => {
       const pc = createPeerConnection(senderId, callId);
-      localStreamRef.current?.getTracks().forEach(t => pc.addTrack(t, localStreamRef.current));
+      localStreamRef.current
+        ?.getTracks()
+        .forEach((t) => pc.addTrack(t, localStreamRef.current));
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -179,32 +237,46 @@ export const CallProvider = ({ children }) => {
 
     const handleWebRTCAnswer = async ({ answer }) => {
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        await peerConnectionRef.current.setRemoteDescription(
+          new RTCSessionDescription(answer)
+        );
       }
     };
 
     const handleCallAccepted = async ({ callId, receiverId }) => {
       const pc = createPeerConnection(receiverId, callId);
-      localStreamRef.current?.getTracks().forEach(t => pc.addTrack(t, localStreamRef.current));
+      localStreamRef.current
+        ?.getTracks()
+        .forEach((t) => pc.addTrack(t, localStreamRef.current));
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       socket.emit("webrtc:offer", { recipientId: receiverId, offer, callId });
     };
 
     socket.on("call:incoming", (data) => {
-      if (callState.isInCall) return socket.emit("call:busy", { callId: data.callId, callerId: data.callerId });
+      if (callState.isInCall)
+        return socket.emit("call:busy", {
+          callId: data.callId,
+          callerId: data.callerId,
+        });
       setIncomingCall(data);
-      setCallState(p => ({ ...p, isReceivingCall: true }));
+      setCallState((p) => ({ ...p, isReceivingCall: true }));
     });
 
     socket.on("call:accepted", handleCallAccepted);
     socket.on("webrtc:offer", handleWebRTCOffer);
     socket.on("webrtc:answer", handleWebRTCAnswer);
     socket.on("webrtc:ice-candidate", ({ candidate }) => {
-      peerConnectionRef.current?.addIceCandidate(new RTCIceCandidate(candidate));
+      peerConnectionRef.current?.addIceCandidate(
+        new RTCIceCandidate(candidate)
+      );
     });
-    socket.on("call:rejected", () => setCallState(p => ({ ...p, callStatus: "rejected" })));
-    socket.on("call:busy", () => setCallState(p => ({ ...p, callStatus: "busy" })));
+    socket.on("call:rejected", () =>
+      setCallState((p) => ({ ...p, callStatus: "rejected" }))
+    );
+    socket.on("call:busy", () =>
+      setCallState((p) => ({ ...p, callStatus: "busy" }))
+    );
     socket.on("call:ended", () => endCall());
 
     return () => {
@@ -220,7 +292,21 @@ export const CallProvider = ({ children }) => {
   }, [socket, callState.isInCall, createPeerConnection, endCall]);
 
   return (
-    <CallContext.Provider value={{ callState, localStream, remoteStream, incomingCall, setIncomingCall, hasVideo, initiateCall, acceptCall, endCall, getUserMedia }}>
+    <CallContext.Provider
+      value={{
+        callState,
+        localStream,
+        remoteStream,
+        incomingCall,
+        setIncomingCall,
+        hasVideo,
+        initiateCall,
+        acceptCall,
+        rejectCall,
+        endCall,
+        getUserMedia,
+      }}
+    >
       {children}
     </CallContext.Provider>
   );
