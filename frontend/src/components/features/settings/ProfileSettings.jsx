@@ -56,17 +56,17 @@ export default function ProfileSettings() {
 
   return (
     <div className="flex flex-col h-full bg-white md:bg-transparent">
-      {/* Header - Tinh chỉnh padding cho mobile */}
+      {/* Header*/}
       <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 bg-white sticky top-0 z-10">
         <h3 className="text-lg sm:text-xl font-bold text-gray-900">Profile</h3>
         <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Update display information and avatar</p>
       </div>
 
-      {/* Form Container - Tinh chỉnh padding cho mobile */}
+      {/* Form Container*/}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8">
         <form onSubmit={handleSubmit} className="max-w-2xl space-y-6 sm:space-y-8">
           
-          {/* Avatar Section - Chuyển đổi linh hoạt giữa dọc/ngang */}
+          {/* Avatar Section */}
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 pb-6 border-b border-gray-100">
             <div 
               className="relative group cursor-pointer" 
