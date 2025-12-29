@@ -6,6 +6,8 @@ import {
   markAsRead,
   markMessageAsRead,
   reactToMessage,
+  searchAllMessages,
+  searchMessages,
   sendMessage,
 } from "../controllers/message.controller.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
@@ -18,6 +20,11 @@ router.use(arcjetProtection, protectRoute);
 
 router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
+
+// Search routes (must be before /:id to avoid conflicts)
+router.get("/search", searchAllMessages);
+router.get("/search/:partnerId", searchMessages);
+
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", upload.single('image'), sendMessage);
 

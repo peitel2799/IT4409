@@ -1,5 +1,5 @@
 import { LoaderIcon } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, forwardRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useChat } from "../../../context/ChatContext";
 import { useSocket } from "../../../context/SocketContext";
@@ -43,7 +43,7 @@ function TypingIndicator({ avatar }) {
   );
 }
 
-export default function MessageList({ chat }) {
+const MessageList = forwardRef(function MessageList({ chat, highlightMessageId }, ref) {
   const messagesEndRef = useRef(null);
   const { messages, getMessagesByUserId, isMessagesLoading } = useChat();
   const { authUser } = useAuth();
@@ -60,8 +60,11 @@ export default function MessageList({ chat }) {
   }, [chat, getMessagesByUserId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isPartnerTyping]);
+    // Don't auto-scroll if we're navigating to a specific message
+    if (!highlightMessageId) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isPartnerTyping, highlightMessageId]);
 
   const groupedMessages = useMemo(() => {
     const groups = {};
@@ -96,7 +99,7 @@ export default function MessageList({ chat }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-[#FAFAFA] custom-scrollbar">
+    <div ref={ref} className="flex-1 overflow-y-auto p-4 space-y-6 bg-[#FAFAFA] custom-scrollbar">
       {Object.entries(groupedMessages).map(([dateKey, msgs]) => (
         <div key={dateKey}>
           <div className="flex justify-center mb-6 sticky top-0 z-0">
@@ -106,6 +109,7 @@ export default function MessageList({ chat }) {
           </div>
           <div className="space-y-1">
             {msgs.map((msg, index) => {
+              const msgId = msg._id || msg.id;
               const senderId = msg.senderId?._id || msg.senderId;
               const isMe = senderId === authUser?._id;
               const getFallbackAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=random`;
@@ -115,15 +119,22 @@ export default function MessageList({ chat }) {
                 : (msg.senderId?.profilePic || chat.profilePic || getFallbackAvatar(chat.fullName));
 
               const isLastInGroup = !msgs[index + 1] || (msgs[index + 1].senderId?._id || msgs[index + 1].senderId) !== senderId;
+              const isHighlighted = highlightMessageId === msgId;
 
               return (
-                <MessageBubble
-                  key={msg._id || msg.id}
-                  message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
-                  isMe={isMe}
-                  avatar={messageAvatar}
-                  isLastInGroup={isLastInGroup}
-                />
+                <div
+                  key={msgId}
+                  id={`message-${msgId}`}
+                  className={`transition-all duration-300 rounded-lg ${isHighlighted ? "bg-yellow-100/50 -mx-2 px-2 py-1" : ""
+                    }`}
+                >
+                  <MessageBubble
+                    message={{ ...msg, displayTime: formatTime(msg.createdAt) }}
+                    isMe={isMe}
+                    avatar={messageAvatar}
+                    isLastInGroup={isLastInGroup}
+                  />
+                </div>
               );
             })}
           </div>
@@ -137,4 +148,6 @@ export default function MessageList({ chat }) {
       <div ref={messagesEndRef} />
     </div>
   );
-}
+});
+
+export default MessageList;
