@@ -145,3 +145,40 @@ export const changePasswordService = async (userId, currentPassword, newPassword
 
     return { message: "Password changed successfully" };
 };
+
+
+// Forget password - Tạo OTP và lưu vào DB
+export const forgotPasswordService = async (email) => {
+    const user = await User.findOne({ email });
+    if (!user) throw new AppError("Email no exist ", 404);
+
+    // Tạo mã OTP 6 số dạng chuỗi
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp; 
+    user.otpExpires = Date.now() + 10 * 60 * 1000; // Hết hạn sau 10 phút
+    await user.save();
+
+    return { email: user.email, fullName: user.fullName, otp };
+};
+
+// Xác thực và đổi mật khẩu mới
+export const resetPasswordService = async (email, otp, newPassword) => {
+    const user = await User.findOne({ 
+        email: email, 
+        otp: otp.toString(), // Ép kiểu string để khớp với DB
+        otpExpires: { $gt: Date.now() } 
+    });
+
+    if (!user) throw new AppError("Mã OTP incorrected or expired", 400);
+
+    // Hash mật khẩu mới
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
+    // Xóa mã sau khi dùng thành công
+    user.otp = undefined; 
+    user.otpExpires = undefined;
+    await user.save();
+
+    return { message: "Change password successfully" };
+};
