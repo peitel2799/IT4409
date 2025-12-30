@@ -1,5 +1,5 @@
 import { uploadOnCloudinary } from "../lib/cloudinary.js";
-import { getReceiverSocketIds, io } from "../lib/socket.js";
+import { getReceiverSocketIds, io, emitToGroupMembers } from "../lib/socket.js";
 import {
   getAllContactsService,
   getChatPartnersService,
@@ -128,10 +128,12 @@ export const reactToMessage = async (req, res) => {
 
     // Emit socket event to sender and receiver (or group members if group message)
     if (updatedMessage.groupId) {
-      // Group message: emit to all group members
-      // Note: This will be handled better in socket.js with group rooms (future step)
-      const groupId = updatedMessage.groupId.toString();
-      io.emit(`group:${groupId}:messageReaction`, updatedMessage);
+      // Group message: emit to group room
+      const roomName = `group:${updatedMessage.groupId}`;
+      io.to(roomName).emit("group:messageReaction", {
+        groupId: updatedMessage.groupId,
+        message: updatedMessage,
+      });
     } else {
       // Private message: emit to sender and receiver
       const receiverId = updatedMessage.senderId.toString() === userId.toString()
@@ -165,10 +167,12 @@ export const sendGroupMessage = async (req, res) => {
 
     const newMessage = await sendGroupMessageService(senderId, groupId, text, imageUrl);
 
-    // Emit socket event to all group members
-    // Note: This will be improved in socket.js with group rooms (future step)
-    const groupIdStr = groupId.toString();
-    io.emit(`group:${groupIdStr}:newMessage`, newMessage);
+    // Emit socket event to group room (all members in the room will receive it)
+    const roomName = `group:${groupId}`;
+    io.to(roomName).emit("group:newMessage", {
+      groupId,
+      message: newMessage,
+    });
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -203,9 +207,9 @@ export const markGroupAsRead = async (req, res) => {
 
     const result = await markGroupMessagesAsReadService(userId, groupId);
 
-    // Emit socket event to group members (simplified for now)
-    const groupIdStr = groupId.toString();
-    io.emit(`group:${groupIdStr}:messagesRead`, {
+    // Emit socket event to group room
+    const roomName = `group:${groupId}`;
+    io.to(roomName).emit("group:messagesRead", {
       groupId,
       readBy: userId,
     });
