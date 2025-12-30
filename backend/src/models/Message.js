@@ -10,7 +10,15 @@ const messageSchema = new mongoose.Schema(
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
+      // Note: receiverId is required for private messages, optional for group messages
+      // Validation will be handled in service layer
+    },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+      default: null,
+      // Note: If groupId exists, this is a group message. Otherwise, it's a private message.
     },
     text: {
       type: String,
@@ -33,6 +41,11 @@ const messageSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Index for faster queries
+messageSchema.index({ groupId: 1, createdAt: -1 });
+messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+messageSchema.index({ receiverId: 1, createdAt: -1 });
 
 const Message = mongoose.model("Message", messageSchema);
 

@@ -4,10 +4,13 @@ import {
   getAllContactsService,
   getChatPartnersService,
   getMessagesByUserIdService,
+  getMessagesByGroupIdService,
   markMessagesAsReadService,
+  markGroupMessagesAsReadService,
   markSingleMessageAsReadService,
   reactToMessageService,
-  sendMessageService
+  sendMessageService,
+  sendGroupMessageService,
 } from "../services/message.service.js";
 
 // Helper to emit to all sockets of a user
@@ -123,21 +126,96 @@ export const reactToMessage = async (req, res) => {
 
     const updatedMessage = await reactToMessageService(messageId, userId, emoji);
 
-    // Emit socket event to sender and receiver
-    const receiverId = updatedMessage.senderId.toString() === userId.toString()
-      ? updatedMessage.receiverId
-      : updatedMessage.senderId;
+    // Emit socket event to sender and receiver (or group members if group message)
+    if (updatedMessage.groupId) {
+      // Group message: emit to all group members
+      // Note: This will be handled better in socket.js with group rooms (future step)
+      const groupId = updatedMessage.groupId.toString();
+      io.emit(`group:${groupId}:messageReaction`, updatedMessage);
+    } else {
+      // Private message: emit to sender and receiver
+      const receiverId = updatedMessage.senderId.toString() === userId.toString()
+        ? updatedMessage.receiverId
+        : updatedMessage.senderId;
 
-    // Notify the other user
-    emitToUser(receiverId, "messageReaction", updatedMessage);
-
-    // Also notify the sender (current user) to update UI immediately if needed (though frontend usually does optimistic update)
-    // Actually, it's better to broadcast to both users involved in the chat so their views are consistent
-    emitToUser(userId, "messageReaction", updatedMessage);
+      emitToUser(receiverId, "messageReaction", updatedMessage);
+      emitToUser(userId, "messageReaction", updatedMessage);
+    }
 
     res.status(200).json(updatedMessage);
   } catch (error) {
     console.error("reactToMessage:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+/**
+ * Send a group message
+ */
+export const sendGroupMessage = async (req, res) => {
+  try {
+    const { text } = req.body;
+    const { groupId } = req.params;
+    const senderId = req.user._id;
+
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await uploadOnCloudinary(req.file.path);
+    }
+
+    const newMessage = await sendGroupMessageService(senderId, groupId, text, imageUrl);
+
+    // Emit socket event to all group members
+    // Note: This will be improved in socket.js with group rooms (future step)
+    const groupIdStr = groupId.toString();
+    io.emit(`group:${groupIdStr}:newMessage`, newMessage);
+
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error("sendGroupMessage:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+/**
+ * Get messages by group ID
+ */
+export const getMessagesByGroupId = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { groupId } = req.params;
+
+    const messages = await getMessagesByGroupIdService(groupId, userId);
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("getMessagesByGroupId:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+/**
+ * Mark all messages in a group as read
+ */
+export const markGroupAsRead = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { groupId } = req.params;
+
+    const result = await markGroupMessagesAsReadService(userId, groupId);
+
+    // Emit socket event to group members (simplified for now)
+    const groupIdStr = groupId.toString();
+    io.emit(`group:${groupIdStr}:messagesRead`, {
+      groupId,
+      readBy: userId,
+    });
+
+    res.status(200).json({
+      message: "Group messages marked as read",
+      updatedCount: result.updatedCount,
+    });
+  } catch (error) {
+    console.error("markGroupAsRead:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

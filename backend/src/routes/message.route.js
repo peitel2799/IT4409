@@ -3,10 +3,13 @@ import {
   getAllContacts,
   getChatPartners,
   getMessagesByUserId,
+  getMessagesByGroupId,
   markAsRead,
+  markGroupAsRead,
   markMessageAsRead,
   reactToMessage,
   sendMessage,
+  sendGroupMessage,
 } from "../controllers/message.controller.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -18,6 +21,13 @@ router.use(arcjetProtection, protectRoute);
 
 router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
+
+// Group message routes (must be before /:id to avoid route conflicts)
+router.get("/group/:groupId", getMessagesByGroupId);
+router.post("/group/:groupId/send", upload.single('image'), sendGroupMessage);
+router.post("/group/:groupId/read", markGroupAsRead);
+
+// Private message routes
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", upload.single('image'), sendMessage);
 
