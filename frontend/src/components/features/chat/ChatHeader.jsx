@@ -1,4 +1,4 @@
-import { Phone, Video, Sidebar, ChevronLeft } from "lucide-react";
+import { Phone, Video, Sidebar, ChevronLeft, Search } from "lucide-react";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useChat } from "../../../context/ChatContext";
@@ -8,6 +8,8 @@ export default function ChatHeader({
   chat,
   onToggleInfoSidebar,
   isInfoSidebarOpen,
+  onToggleSearch,
+  isSearchOpen,
 }) {
   const { onlineUsers, socket } = useSocket();
   const { authUser } = useAuth();
@@ -82,6 +84,16 @@ export default function ChatHeader({
       </div>
 
       <div className="flex items-center gap-1">
+        <button
+          onClick={onToggleSearch}
+          className={`p-2 rounded-xl transition-colors ${isSearchOpen
+              ? "bg-pink-50 text-pink-500"
+              : "text-gray-400 hover:text-pink-500 hover:bg-pink-50"
+            }`}
+          title="Search messages (Ctrl+F)"
+        >
+          <Search size={20} />
+        </button>
         <button
           onClick={() => handleStartCall(false)}
           className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl"

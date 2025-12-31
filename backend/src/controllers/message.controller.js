@@ -11,6 +11,9 @@ import {
   reactToMessageService,
   sendMessageService,
   sendGroupMessageService,
+  searchAllMessagesService,
+  searchMessagesService,
+  sendMessageService
 } from "../services/message.service.js";
 
 // Helper to emit to all sockets of a user
@@ -193,6 +196,20 @@ export const getMessagesByGroupId = async (req, res) => {
     res.status(200).json(messages);
   } catch (error) {
     console.error("getMessagesByGroupId:", error);
+export const searchMessages = async (req, res) => {
+  try {
+    const myUserId = req.user._id;
+    const { partnerId } = req.params;
+    const { q } = req.query;
+
+    if (!q || q.trim() === "") {
+      return res.status(200).json([]);
+    }
+
+    const messages = await searchMessagesService(myUserId, partnerId, q);
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("searchMessages:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };
@@ -220,6 +237,19 @@ export const markGroupAsRead = async (req, res) => {
     });
   } catch (error) {
     console.error("markGroupAsRead:", error);
+export const searchAllMessages = async (req, res) => {
+  try {
+    const myUserId = req.user._id;
+    const { q } = req.query;
+
+    if (!q || q.trim() === "") {
+      return res.status(200).json([]);
+    }
+
+    const messages = await searchAllMessagesService(myUserId, q);
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("searchAllMessages:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
   }
 };

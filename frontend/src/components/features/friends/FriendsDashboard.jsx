@@ -76,7 +76,7 @@ export default function FriendsDashboard() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-hidden p-4 md:p-6 relative">
+        <div className="flex-1 overflow-hidden p-4 md:p-6 relative flex flex-col">
           <Outlet context={{ searchQuery, viewMode, onStartChat: handleStartChat }} />
           <AddFriendButton />
         </div>

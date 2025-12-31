@@ -61,7 +61,7 @@ export default function CallsDashboard() {
 
   // Filter calls
   const filteredCalls = calls.filter(call => {
-    const matchesSearch = call.contact?.fullName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = call.contact?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || call.contact?.email?.toLowerCase().includes(searchQuery.toLowerCase());;
     
     let matchesFilter = true;
     if (filter === "missed") {
@@ -76,11 +76,7 @@ export default function CallsDashboard() {
   });
 
   const handleMessage = (call) => {
-    setSelectedUser({ 
-      id: call.contact._id, 
-      name: call.contact.fullName, 
-      avatar: call.contact.profilePic 
-    });
+    setSelectedUser(call.contact);
     navigate("/chat/messages");
   };
 

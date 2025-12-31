@@ -8,6 +8,7 @@ import {
     getFriendRequestsService,
     getSentRequestsService,
     getFriendsService,
+    searchFriendsService,
     searchUsersService,
 } from "../services/friend.service.js";
 
@@ -136,6 +137,17 @@ export const searchUsers = async (req, res) => {
         res.json(results);
     } catch (error) {
         console.error("searchUsers:", error);
+        res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+    }
+};
+
+export const searchFriends = async (req, res) => {
+    try {
+        const { q = "" } = req.query;
+        const results = await searchFriendsService(req.user._id, q);
+        res.json(results);
+    } catch (error) {
+        console.error("searchFriends:", error);
         res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
     }
 };

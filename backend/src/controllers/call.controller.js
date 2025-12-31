@@ -12,8 +12,8 @@ export const getCallHistory = async (req, res) => {
     const calls = await Call.find({
       $or: [{ caller: userId }, { receiver: userId }],
     })
-      .populate("caller", "fullName profilePic")
-      .populate("receiver", "fullName profilePic")
+      .populate("caller", "fullName profilePic email")
+      .populate("receiver", "fullName profilePic email")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

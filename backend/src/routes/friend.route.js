@@ -10,6 +10,7 @@ import {
     getFriendRequests,
     getSentRequests,
     getFriends,
+    searchFriends,
     searchUsers,
 } from "../controllers/friend.controller.js";
 
@@ -27,6 +28,7 @@ router.get("/requests", getFriendRequests);
 router.get("/requests/sent", getSentRequests);
 router.get("/list", getFriends);
 router.get("/search", searchUsers);
+router.get("/search-friends", searchFriends);
 
 export default router;
 

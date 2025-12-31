@@ -15,9 +15,11 @@ export default function CallsList({ calls, loading, onCall, onVideo, onMessage }
   // Empty state
   if (calls.length === 0) {
     return (
-        <div className="flex flex-col items-center justify-center text-gray-400 h-full min-h-[300px]">
-            <Search size={40} className="opacity-20 mb-2"/>
-            <p>No calls found.</p>
+        <div className="flex-1 flex flex-col items-center justify-center h-full py-20 text-gray-400">
+            <Search size={48} className="opacity-20 mb-4"/>
+            <p className="text-sm italic text-center px-4">
+                No call history found.
+            </p>
         </div>
     );
   }

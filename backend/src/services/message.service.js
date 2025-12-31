@@ -296,3 +296,65 @@ export const reactToMessageService = async (messageId, userId, emoji) => {
     await message.save();
     return message;
 };
+
+/**
+ * Search messages between two users by text content
+ */
+export const searchMessagesService = async (myId, partnerId, searchQuery) => {
+    if (!searchQuery || searchQuery.trim() === "") {
+        return [];
+    }
+
+    const searchRegex = new RegExp(searchQuery.trim(), "i");
+
+    const messages = await Message.find({
+        $and: [
+            {
+                $or: [
+                    { senderId: myId, receiverId: partnerId },
+                    { senderId: partnerId, receiverId: myId },
+                ],
+            },
+            {
+                text: { $regex: searchRegex },
+            },
+        ],
+    })
+        .populate("senderId", "fullName profilePic email")
+        .populate("receiverId", "fullName profilePic email")
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+    return messages;
+};
+
+/**
+ * Search all messages for a user across all conversations
+ */
+export const searchAllMessagesService = async (userId, searchQuery) => {
+    if (!searchQuery || searchQuery.trim() === "") {
+        return [];
+    }
+
+    const searchRegex = new RegExp(searchQuery.trim(), "i");
+
+    const messages = await Message.find({
+        $and: [
+            {
+                $or: [
+                    { senderId: userId },
+                    { receiverId: userId },
+                ],
+            },
+            {
+                text: { $regex: searchRegex },
+            },
+        ],
+    })
+        .populate("senderId", "fullName profilePic email")
+        .populate("receiverId", "fullName profilePic email")
+        .sort({ createdAt: -1 })
+        .limit(100);
+
+    return messages;
+};

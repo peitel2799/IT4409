@@ -1,4 +1,4 @@
-import { sendWelcomeEmail } from "../emails/emailHandlers.js";
+import { sendWelcomeEmail,sendOTPEmail } from "../emails/emailHandlers.js";
 import { generateToken } from "../lib/utils.js";
 import { ENV } from "../lib/env.js";
 import {
@@ -7,6 +7,7 @@ import {
     updateProfileService,
     getUserByIdService,
     changePasswordService,
+    forgotPasswordService, resetPasswordService
 } from "../services/auth.service.js";
 
 export const signup = async (req, res) => {
@@ -89,5 +90,32 @@ export const changePassword = async (req, res) => {
     } catch (error) {
         console.error("changePassword:", error);
         res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+    }
+};
+
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const result = await forgotPasswordService(email);
+        
+        //await để đợi quá trình gửi mail hoàn tất
+        await sendOTPEmail(result.email, result.fullName, result.otp);
+        
+        res.status(200).json({ message: "Mã OTP sent your email" });
+    } catch (error) {
+        //bắt lỗi từ service và emailHandler
+        res.status(error.statusCode || 500).json({ message: error.message });
+    }
+};
+
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const result = await resetPasswordService(email, otp, newPassword);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ message: error.message });
     }
 };

@@ -56,14 +56,16 @@ export default function FriendsList({ type }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 h-64">
-        <Search size={40} className="opacity-20 mb-2" />
-        <p className="text-sm">
-          {type === 'online'
-            ? "No friends are online right now."
-            : type === 'requests'
-              ? "No pending friend requests."
-              : "No results found."}
+      <div className="flex-1 flex flex-col items-center justify-center h-full py-20 text-gray-400">
+        <Search size={48} className="opacity-20 mb-4" />
+        <p className="text-sm italic text-center px-4">
+          {searchQuery 
+            ? `No results found for "${searchQuery}"`
+            : type === 'online'
+              ? "No friends are online right now."
+              : type === 'requests'
+                ? "No pending friend requests."
+                : "Your friends list is empty."}
         </p>
       </div>
     );

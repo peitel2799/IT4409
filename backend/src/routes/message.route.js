@@ -8,6 +8,8 @@ import {
   markGroupAsRead,
   markMessageAsRead,
   reactToMessage,
+  searchAllMessages,
+  searchMessages,
   sendMessage,
   sendGroupMessage,
 } from "../controllers/message.controller.js";
@@ -28,6 +30,10 @@ router.post("/group/:groupId/send", upload.single('image'), sendGroupMessage);
 router.post("/group/:groupId/read", markGroupAsRead);
 
 // Private message routes
+// Search routes (must be before /:id to avoid conflicts)
+router.get("/search", searchAllMessages);
+router.get("/search/:partnerId", searchMessages);
+
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", upload.single('image'), sendMessage);
 

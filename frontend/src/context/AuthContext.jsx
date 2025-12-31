@@ -10,6 +10,8 @@ export const AuthProvider = ({ children }) => {
     const [isSigningUp, setIsSigningUp] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const [isSendingOTP, setIsSendingOTP] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
 
     useEffect(() => {
         checkAuth();
@@ -84,7 +86,35 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const value = {
+    const forgotPassword = async (email) => {
+        setIsSendingOTP(true);
+        try {
+            const res = await axiosInstance.post("/auth/forgot-password", { email });
+            toast.success(res.data.message || "Mã OTP đã được gửi!");
+            return true; // Trả về true để Frontend biết và chuyển bước (Step)
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Gửi OTP thất bại");
+            return false;
+        } finally {
+            setIsSendingOTP(false);
+        }
+    };
+
+    const resetPassword = async (data) => {
+        setIsResettingPassword(true);
+        try {
+            const res = await axiosInstance.post("/auth/reset-password", data);
+            toast.success("Đặt lại mật khẩu thành công!");
+            return true;
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Đặt lại mật khẩu thất bại");
+            return false;
+        } finally {
+            setIsResettingPassword(false);
+        }
+    };
+
+        const value = {
         authUser,
         setAuthUser,
         isCheckingAuth,
@@ -96,6 +126,10 @@ export const AuthProvider = ({ children }) => {
         logout,
         checkAuth,
         updateProfile,
+        isSendingOTP,
+        isResettingPassword,
+        forgotPassword,
+        resetPassword,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

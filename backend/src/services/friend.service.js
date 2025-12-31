@@ -198,6 +198,31 @@ export const getFriendsService = async (userId) => {
 };
 
 /**
+ * Search only among friends of a user
+ */
+export const searchFriendsService = async (userId, query = "") => {
+    const user = await User.findById(userId).populate({
+        path: "friends",
+        select: populateFields,
+    });
+
+    if (!user.friends || user.friends.length === 0) {
+        return [];
+    }
+
+    if (!query.trim()) {
+        return user.friends;
+    }
+
+    const regex = new RegExp(query, "i");
+
+    return user.friends.filter(
+        (friend) =>
+            regex.test(friend.fullName) || regex.test(friend.email)
+    );
+};
+
+/**
  * Search for users
  */
 export const searchUsersService = async (
