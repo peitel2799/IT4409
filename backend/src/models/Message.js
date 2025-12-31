@@ -10,7 +10,15 @@ const messageSchema = new mongoose.Schema(
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: function () {
+        // Required only for direct messages (not group messages)
+        return !this.groupId;
+      },
+    },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+      default: null,
     },
     text: {
       type: String,
@@ -33,6 +41,10 @@ const messageSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Index for faster queries
+messageSchema.index({ groupId: 1, createdAt: -1 });
+messageSchema.index({ senderId: 1, receiverId: 1 });
 
 const Message = mongoose.model("Message", messageSchema);
 

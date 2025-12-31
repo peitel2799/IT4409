@@ -1,5 +1,6 @@
 import Message from "../models/Message.js";
 import User from "../models/User.js";
+import Group from "../models/Group.js";
 import { AppError } from "./AppError.js";
 
 /**
@@ -55,7 +56,9 @@ export const sendMessageService = async (senderId, receiverId, text, imageUrl) =
  * Get all chat partners for a user with last message info and unread count
  */
 export const getChatPartnersService = async (userId) => {
+    // Only get direct messages (exclude group messages which have groupId)
     const messages = await Message.find({
+        groupId: null,
         $or: [{ senderId: userId }, { receiverId: userId }],
     }).sort({ createdAt: -1 });
 
@@ -63,6 +66,9 @@ export const getChatPartnersService = async (userId) => {
     const chatPartnerMap = new Map();
 
     messages.forEach((msg) => {
+        // Skip messages without receiverId (safety check)
+        if (!msg.receiverId) return;
+
         const partnerId = msg.senderId.toString() === userId.toString()
             ? msg.receiverId.toString()
             : msg.senderId.toString();
@@ -242,4 +248,52 @@ export const searchAllMessagesService = async (userId, searchQuery) => {
         .limit(100);
 
     return messages;
+};
+
+// ==================== GROUP MESSAGE SERVICES ====================
+
+/**
+ * Get messages for a group
+ */
+export const getGroupMessagesService = async (groupId, userId) => {
+    // Verify user is a member of the group
+    const group = await Group.findOne({ _id: groupId, members: userId });
+    if (!group) {
+        throw new AppError("Group not found or you are not a member", 404);
+    }
+
+    const messages = await Message.find({ groupId })
+        .populate("senderId", "fullName profilePic email")
+        .sort({ createdAt: 1 });
+
+    return messages;
+};
+
+/**
+ * Send a message to a group
+ */
+export const sendGroupMessageService = async (senderId, groupId, text, imageUrl) => {
+    if (!text && !imageUrl) {
+        throw new AppError("Text or image is required", 400);
+    }
+
+    // Verify user is a member of the group
+    const group = await Group.findOne({ _id: groupId, members: senderId });
+    if (!group) {
+        throw new AppError("Group not found or you are not a member", 404);
+    }
+
+    const newMessage = new Message({
+        senderId,
+        groupId,
+        text,
+        image: imageUrl,
+    });
+
+    await newMessage.save();
+
+    // Populate sender info before returning
+    await newMessage.populate("senderId", "fullName profilePic email");
+
+    return { message: newMessage, group };
 };
