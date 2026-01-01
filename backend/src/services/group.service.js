@@ -355,3 +355,57 @@ export const removeAdminFromGroupService = async (groupId, adminUserId, memberId
 
   return { group, demotedAdminId: memberIdToDemote };
 };
+
+/**
+ * Update group information (only admins can update)
+ */
+export const updateGroupService = async (groupId, userId, updateData) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: userId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === userId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can update group information", 403);
+  }
+
+  // Validate and update fields
+  if (updateData.name !== undefined) {
+    if (!updateData.name || updateData.name.trim().length === 0) {
+      throw new AppError("Group name cannot be empty", 400);
+    }
+    if (updateData.name.trim().length > 100) {
+      throw new AppError("Group name must be less than 100 characters", 400);
+    }
+    group.name = updateData.name.trim();
+  }
+
+  if (updateData.description !== undefined) {
+    if (updateData.description.trim().length > 500) {
+      throw new AppError("Group description must be less than 500 characters", 400);
+    }
+    group.description = updateData.description.trim();
+  }
+
+  if (updateData.avatar !== undefined) {
+    group.avatar = updateData.avatar;
+  }
+
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return group;
+};

@@ -9,6 +9,7 @@ import {
   removeMember,
   addAdmin,
   removeAdmin,
+  updateGroup,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -24,6 +25,9 @@ router.get("/", getMyGroups);
 
 // Get a specific group by ID
 router.get("/:groupId", getGroupById);
+
+// Update group information (admins only)
+router.put("/:groupId", updateGroup);
 
 // Leave a group
 router.post("/:groupId/leave", leaveGroup);

@@ -7,6 +7,7 @@ import {
   removeMemberFromGroupService,
   addAdminToGroupService,
   removeAdminFromGroupService,
+  updateGroupService,
 } from "../services/group.service.js";
 import { getReceiverSocketIds, io } from "../lib/socket.js";
 
@@ -306,6 +307,48 @@ export const removeAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in removeAdmin controller:", error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+/**
+ * Update group information
+ * PUT /api/groups/:groupId
+ */
+export const updateGroup = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { groupId } = req.params;
+    const { name, description, avatar } = req.body;
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (avatar !== undefined) updateData.avatar = avatar;
+
+    const group = await updateGroupService(groupId, userId, updateData);
+
+    // Notify all members about the update
+    group.members.forEach((member) => {
+      if (member._id.toString() !== userId.toString()) {
+        emitToUser(member._id, "group:updated", {
+          groupId,
+          updatedBy: userId,
+          group,
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Group updated successfully",
+      data: group,
+    });
+  } catch (error) {
+    console.error("Error in updateGroup controller:", error);
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Internal server error",
