@@ -5,6 +5,7 @@ import {
   leaveGroupService,
   addMembersToGroupService,
   removeMemberFromGroupService,
+  addAdminToGroupService,
 } from "../services/group.service.js";
 import { getReceiverSocketIds, io } from "../lib/socket.js";
 
@@ -216,6 +217,50 @@ export const removeMember = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in removeMember controller:", error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+/**
+ * Add admin rights to a member
+ * POST /api/groups/:groupId/admins/:userId
+ */
+export const addAdmin = async (req, res) => {
+  try {
+    const adminUserId = req.user._id;
+    const { groupId, userId } = req.params;
+
+    const result = await addAdminToGroupService(groupId, adminUserId, userId);
+
+    // Notify the promoted member
+    emitToUser(userId, "group:promotedToAdmin", {
+      groupId,
+      promotedBy: adminUserId,
+    });
+
+    // Notify all other members
+    result.group.members.forEach((member) => {
+      if (
+        member._id.toString() !== userId &&
+        member._id.toString() !== adminUserId.toString()
+      ) {
+        emitToUser(member._id, "group:adminAdded", {
+          groupId,
+          newAdminId: userId,
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Admin rights granted successfully",
+      data: result.group,
+    });
+  } catch (error) {
+    console.error("Error in addAdmin controller:", error);
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Internal server error",

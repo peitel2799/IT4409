@@ -242,3 +242,55 @@ export const removeMemberFromGroupService = async (groupId, adminUserId, memberI
 
   return { group, removedMemberId: memberIdToRemove };
 };
+
+/**
+ * Add admin rights to a member (only existing admins can promote)
+ */
+export const addAdminToGroupService = async (groupId, adminUserId, memberIdToPromote) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: adminUserId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === adminUserId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can promote members to admin", 403);
+  }
+
+  // Check if member exists in the group
+  const isMember = group.members.some(
+    (memberId) => memberId.toString() === memberIdToPromote.toString()
+  );
+
+  if (!isMember) {
+    throw new AppError("User is not a member of this group", 404);
+  }
+
+  // Check if member is already an admin
+  const isAlreadyAdmin = group.admins.some(
+    (adminId) => adminId.toString() === memberIdToPromote.toString()
+  );
+
+  if (isAlreadyAdmin) {
+    throw new AppError("User is already an admin", 400);
+  }
+
+  // Add to admins array
+  group.admins.push(memberIdToPromote);
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, newAdminId: memberIdToPromote };
+};
