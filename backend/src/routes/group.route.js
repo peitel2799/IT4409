@@ -8,6 +8,7 @@ import {
   addMembers,
   removeMember,
   addAdmin,
+  removeAdmin,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -35,5 +36,8 @@ router.delete("/:groupId/members/:userId", removeMember);
 
 // Add admin rights to a member (admins only)
 router.post("/:groupId/admins/:userId", addAdmin);
+
+// Remove admin rights from a member (admins only)
+router.delete("/:groupId/admins/:userId", removeAdmin);
 
 export default router;

@@ -294,3 +294,64 @@ export const addAdminToGroupService = async (groupId, adminUserId, memberIdToPro
 
   return { group, newAdminId: memberIdToPromote };
 };
+
+/**
+ * Remove admin rights from a member (only admins can demote)
+ */
+export const removeAdminFromGroupService = async (groupId, adminUserId, memberIdToDemote) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: adminUserId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === adminUserId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can remove admin rights", 403);
+  }
+
+  // Cannot demote the creator
+  if (group.createdBy.toString() === memberIdToDemote.toString()) {
+    throw new AppError("Cannot remove admin rights from the group creator", 403);
+  }
+
+  // Check if target user is actually an admin
+  const isTargetAdmin = group.admins.some(
+    (adminId) => adminId.toString() === memberIdToDemote.toString()
+  );
+
+  if (!isTargetAdmin) {
+    throw new AppError("User is not an admin", 400);
+  }
+
+  // Prevent demoting yourself (except if you're leaving)
+  if (adminUserId.toString() === memberIdToDemote.toString()) {
+    throw new AppError("Cannot remove your own admin rights. Use leave group instead.", 400);
+  }
+
+  // Must have at least one admin remaining
+  if (group.admins.length <= 1) {
+    throw new AppError("Cannot remove the last admin. Promote another member first.", 400);
+  }
+
+  // Remove from admins array
+  group.admins = group.admins.filter(
+    (adminId) => adminId.toString() !== memberIdToDemote.toString()
+  );
+
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, demotedAdminId: memberIdToDemote };
+};
