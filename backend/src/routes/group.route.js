@@ -6,6 +6,7 @@ import {
   getGroupById,
   leaveGroup,
   addMembers,
+  removeMember,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -27,5 +28,8 @@ router.post("/:groupId/leave", leaveGroup);
 
 // Add members to a group (admins only)
 router.post("/:groupId/members", addMembers);
+
+// Remove a member from a group (admins only)
+router.delete("/:groupId/members/:userId", removeMember);
 
 export default router;

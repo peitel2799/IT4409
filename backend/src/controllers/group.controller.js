@@ -4,6 +4,7 @@ import {
   getGroupByIdService,
   leaveGroupService,
   addMembersToGroupService,
+  removeMemberFromGroupService,
 } from "../services/group.service.js";
 import { getReceiverSocketIds, io } from "../lib/socket.js";
 
@@ -174,6 +175,47 @@ export const addMembers = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in addMembers controller:", error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+/**
+ * Remove a member from a group
+ * DELETE /api/groups/:groupId/members/:userId
+ */
+export const removeMember = async (req, res) => {
+  try {
+    const adminUserId = req.user._id;
+    const { groupId, userId } = req.params;
+
+    const result = await removeMemberFromGroupService(groupId, adminUserId, userId);
+
+    // Notify removed member
+    emitToUser(userId, "group:removed", {
+      groupId,
+      removedBy: adminUserId,
+    });
+
+    // Notify remaining members
+    result.group.members.forEach((member) => {
+      if (member._id.toString() !== adminUserId.toString()) {
+        emitToUser(member._id, "group:memberRemoved", {
+          groupId,
+          removedMemberId: userId,
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Member removed successfully",
+      data: result.group,
+    });
+  } catch (error) {
+    console.error("Error in removeMember controller:", error);
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Internal server error",

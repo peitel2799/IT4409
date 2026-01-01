@@ -181,3 +181,64 @@ export const addMembersToGroupService = async (groupId, userId, memberIdsToAdd) 
 
   return { group, addedMembers: uniqueNewMemberIds };
 };
+
+/**
+ * Remove a member from a group (only admins can remove)
+ */
+export const removeMemberFromGroupService = async (groupId, adminUserId, memberIdToRemove) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: adminUserId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if admin user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === adminUserId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can remove members", 403);
+  }
+
+  // Check if member to remove exists in the group
+  const isMember = group.members.some(
+    (memberId) => memberId.toString() === memberIdToRemove.toString()
+  );
+
+  if (!isMember) {
+    throw new AppError("User is not a member of this group", 404);
+  }
+
+  // Prevent removing the creator
+  if (group.createdBy.toString() === memberIdToRemove.toString()) {
+    throw new AppError("Cannot remove the group creator. Creator must leave the group instead.", 403);
+  }
+
+  // Prevent admin from removing themselves (they should use leave group)
+  if (adminUserId.toString() === memberIdToRemove.toString()) {
+    throw new AppError("Use leave group to remove yourself", 400);
+  }
+
+  // Remove member from members array
+  group.members = group.members.filter(
+    (memberId) => memberId.toString() !== memberIdToRemove.toString()
+  );
+
+  // Also remove from admins if they were an admin
+  group.admins = group.admins.filter(
+    (adminId) => adminId.toString() !== memberIdToRemove.toString()
+  );
+
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, removedMemberId: memberIdToRemove };
+};
