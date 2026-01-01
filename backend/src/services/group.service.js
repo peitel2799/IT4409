@@ -127,3 +127,57 @@ export const leaveGroupService = async (groupId, userId) => {
 
   return { deleted: false, group };
 };
+
+/**
+ * Add members to a group (only admins can add)
+ */
+export const addMembersToGroupService = async (groupId, userId, memberIdsToAdd) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: userId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user is admin
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === userId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can add members", 403);
+  }
+
+  if (!memberIdsToAdd || memberIdsToAdd.length === 0) {
+    throw new AppError("No members to add", 400);
+  }
+
+  // Validate that all member IDs exist
+  const newMembers = await User.find({ _id: { $in: memberIdsToAdd } }).select("_id");
+  if (newMembers.length !== memberIdsToAdd.length) {
+    throw new AppError("Some users not found", 400);
+  }
+
+  // Filter out users already in the group
+  const existingMemberIds = group.members.map((id) => id.toString());
+  const uniqueNewMemberIds = memberIdsToAdd.filter(
+    (id) => !existingMemberIds.includes(id.toString())
+  );
+
+  if (uniqueNewMemberIds.length === 0) {
+    throw new AppError("All users are already members", 400);
+  }
+
+  // Add new members
+  group.members.push(...uniqueNewMemberIds);
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, addedMembers: uniqueNewMemberIds };
+};

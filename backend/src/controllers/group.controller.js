@@ -3,6 +3,7 @@ import {
   getGroupsByUserIdService,
   getGroupByIdService,
   leaveGroupService,
+  addMembersToGroupService,
 } from "../services/group.service.js";
 import { getReceiverSocketIds, io } from "../lib/socket.js";
 
@@ -127,6 +128,52 @@ export const leaveGroup = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in leaveGroup controller:", error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+/**
+ * Add members to a group
+ * POST /api/groups/:groupId/members
+ */
+export const addMembers = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { groupId } = req.params;
+    const { memberIds } = req.body;
+
+    const result = await addMembersToGroupService(groupId, userId, memberIds);
+
+    // Notify new members about being added to the group
+    result.addedMembers.forEach((memberId) => {
+      emitToUser(memberId, "group:added", {
+        group: result.group,
+      });
+    });
+
+    // Notify existing members about new members
+    result.group.members.forEach((member) => {
+      if (
+        !result.addedMembers.includes(member._id.toString()) &&
+        member._id.toString() !== userId.toString()
+      ) {
+        emitToUser(member._id, "group:membersAdded", {
+          groupId,
+          addedMembers: result.addedMembers,
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Members added successfully",
+      data: result.group,
+    });
+  } catch (error) {
+    console.error("Error in addMembers controller:", error);
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Internal server error",
