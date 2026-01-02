@@ -127,3 +127,285 @@ export const leaveGroupService = async (groupId, userId) => {
 
   return { deleted: false, group };
 };
+
+/**
+ * Add members to a group (only admins can add)
+ */
+export const addMembersToGroupService = async (groupId, userId, memberIdsToAdd) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: userId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user is admin
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === userId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can add members", 403);
+  }
+
+  if (!memberIdsToAdd || memberIdsToAdd.length === 0) {
+    throw new AppError("No members to add", 400);
+  }
+
+  // Validate that all member IDs exist
+  const newMembers = await User.find({ _id: { $in: memberIdsToAdd } }).select("_id");
+  if (newMembers.length !== memberIdsToAdd.length) {
+    throw new AppError("Some users not found", 400);
+  }
+
+  // Filter out users already in the group
+  const existingMemberIds = group.members.map((id) => id.toString());
+  const uniqueNewMemberIds = memberIdsToAdd.filter(
+    (id) => !existingMemberIds.includes(id.toString())
+  );
+
+  if (uniqueNewMemberIds.length === 0) {
+    throw new AppError("All users are already members", 400);
+  }
+
+  // Add new members
+  group.members.push(...uniqueNewMemberIds);
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, addedMembers: uniqueNewMemberIds };
+};
+
+/**
+ * Remove a member from a group (only admins can remove)
+ */
+export const removeMemberFromGroupService = async (groupId, adminUserId, memberIdToRemove) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: adminUserId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if admin user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === adminUserId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can remove members", 403);
+  }
+
+  // Check if member to remove exists in the group
+  const isMember = group.members.some(
+    (memberId) => memberId.toString() === memberIdToRemove.toString()
+  );
+
+  if (!isMember) {
+    throw new AppError("User is not a member of this group", 404);
+  }
+
+  // Prevent removing the creator
+  if (group.createdBy.toString() === memberIdToRemove.toString()) {
+    throw new AppError("Cannot remove the group creator. Creator must leave the group instead.", 403);
+  }
+
+  // Prevent admin from removing themselves (they should use leave group)
+  if (adminUserId.toString() === memberIdToRemove.toString()) {
+    throw new AppError("Use leave group to remove yourself", 400);
+  }
+
+  // Remove member from members array
+  group.members = group.members.filter(
+    (memberId) => memberId.toString() !== memberIdToRemove.toString()
+  );
+
+  // Also remove from admins if they were an admin
+  group.admins = group.admins.filter(
+    (adminId) => adminId.toString() !== memberIdToRemove.toString()
+  );
+
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, removedMemberId: memberIdToRemove };
+};
+
+/**
+ * Add admin rights to a member (only existing admins can promote)
+ */
+export const addAdminToGroupService = async (groupId, adminUserId, memberIdToPromote) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: adminUserId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === adminUserId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can promote members to admin", 403);
+  }
+
+  // Check if member exists in the group
+  const isMember = group.members.some(
+    (memberId) => memberId.toString() === memberIdToPromote.toString()
+  );
+
+  if (!isMember) {
+    throw new AppError("User is not a member of this group", 404);
+  }
+
+  // Check if member is already an admin
+  const isAlreadyAdmin = group.admins.some(
+    (adminId) => adminId.toString() === memberIdToPromote.toString()
+  );
+
+  if (isAlreadyAdmin) {
+    throw new AppError("User is already an admin", 400);
+  }
+
+  // Add to admins array
+  group.admins.push(memberIdToPromote);
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, newAdminId: memberIdToPromote };
+};
+
+/**
+ * Remove admin rights from a member (only admins can demote)
+ */
+export const removeAdminFromGroupService = async (groupId, adminUserId, memberIdToDemote) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: adminUserId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === adminUserId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can remove admin rights", 403);
+  }
+
+  // Cannot demote the creator
+  if (group.createdBy.toString() === memberIdToDemote.toString()) {
+    throw new AppError("Cannot remove admin rights from the group creator", 403);
+  }
+
+  // Check if target user is actually an admin
+  const isTargetAdmin = group.admins.some(
+    (adminId) => adminId.toString() === memberIdToDemote.toString()
+  );
+
+  if (!isTargetAdmin) {
+    throw new AppError("User is not an admin", 400);
+  }
+
+  // Prevent demoting yourself (except if you're leaving)
+  if (adminUserId.toString() === memberIdToDemote.toString()) {
+    throw new AppError("Cannot remove your own admin rights. Use leave group instead.", 400);
+  }
+
+  // Must have at least one admin remaining
+  if (group.admins.length <= 1) {
+    throw new AppError("Cannot remove the last admin. Promote another member first.", 400);
+  }
+
+  // Remove from admins array
+  group.admins = group.admins.filter(
+    (adminId) => adminId.toString() !== memberIdToDemote.toString()
+  );
+
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return { group, demotedAdminId: memberIdToDemote };
+};
+
+/**
+ * Update group information (only admins can update)
+ */
+export const updateGroupService = async (groupId, userId, updateData) => {
+  const group = await Group.findOne({
+    _id: groupId,
+    members: userId,
+  });
+
+  if (!group) {
+    throw new AppError("Group not found or you are not a member", 404);
+  }
+
+  // Check if user has admin rights
+  const isAdmin = group.admins.some(
+    (adminId) => adminId.toString() === userId.toString()
+  );
+
+  if (!isAdmin) {
+    throw new AppError("Only admins can update group information", 403);
+  }
+
+  // Validate and update fields
+  if (updateData.name !== undefined) {
+    if (!updateData.name || updateData.name.trim().length === 0) {
+      throw new AppError("Group name cannot be empty", 400);
+    }
+    if (updateData.name.trim().length > 100) {
+      throw new AppError("Group name must be less than 100 characters", 400);
+    }
+    group.name = updateData.name.trim();
+  }
+
+  if (updateData.description !== undefined) {
+    if (updateData.description.trim().length > 500) {
+      throw new AppError("Group description must be less than 500 characters", 400);
+    }
+    group.description = updateData.description.trim();
+  }
+
+  if (updateData.avatar !== undefined) {
+    group.avatar = updateData.avatar;
+  }
+
+  await group.save();
+
+  // Populate before returning
+  await group.populate("members", "fullName email profilePic");
+  await group.populate("admins", "fullName email profilePic");
+  await group.populate("createdBy", "fullName email profilePic");
+
+  return group;
+};
