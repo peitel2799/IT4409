@@ -158,6 +158,144 @@ export const GroupProvider = ({ children }) => {
     [selectedGroup]
   );
 
+  // Add members to a group
+  const addMembers = useCallback(
+    async (groupId, memberIds) => {
+      try {
+        const response = await axiosInstance.post(`/groups/${groupId}/members`, {
+          memberIds,
+        });
+        const updatedGroup = response.data.data;
+
+        // Update groups list
+        setGroups((prev) =>
+          prev.map((g) => (g._id === groupId ? updatedGroup : g))
+        );
+
+        // Update selected group if it's the same
+        if (selectedGroup?._id === groupId) {
+          setSelectedGroup(updatedGroup);
+        }
+
+        return updatedGroup;
+      } catch (error) {
+        console.error("Error adding members:", error);
+        throw error;
+      }
+    },
+    [selectedGroup]
+  );
+
+  // Remove a member from a group
+  const removeMember = useCallback(
+    async (groupId, userId) => {
+      try {
+        const response = await axiosInstance.delete(
+          `/groups/${groupId}/members/${userId}`
+        );
+        const updatedGroup = response.data.data;
+
+        // Update groups list
+        setGroups((prev) =>
+          prev.map((g) => (g._id === groupId ? updatedGroup : g))
+        );
+
+        // Update selected group if it's the same
+        if (selectedGroup?._id === groupId) {
+          setSelectedGroup(updatedGroup);
+        }
+
+        return updatedGroup;
+      } catch (error) {
+        console.error("Error removing member:", error);
+        throw error;
+      }
+    },
+    [selectedGroup]
+  );
+
+  // Add admin rights to a member
+  const addAdmin = useCallback(
+    async (groupId, userId) => {
+      try {
+        const response = await axiosInstance.post(
+          `/groups/${groupId}/admins/${userId}`
+        );
+        const updatedGroup = response.data.data;
+
+        // Update groups list
+        setGroups((prev) =>
+          prev.map((g) => (g._id === groupId ? updatedGroup : g))
+        );
+
+        // Update selected group if it's the same
+        if (selectedGroup?._id === groupId) {
+          setSelectedGroup(updatedGroup);
+        }
+
+        return updatedGroup;
+      } catch (error) {
+        console.error("Error adding admin:", error);
+        throw error;
+      }
+    },
+    [selectedGroup]
+  );
+
+  // Remove admin rights from a member
+  const removeAdmin = useCallback(
+    async (groupId, userId) => {
+      try {
+        const response = await axiosInstance.delete(
+          `/groups/${groupId}/admins/${userId}`
+        );
+        const updatedGroup = response.data.data;
+
+        // Update groups list
+        setGroups((prev) =>
+          prev.map((g) => (g._id === groupId ? updatedGroup : g))
+        );
+
+        // Update selected group if it's the same
+        if (selectedGroup?._id === groupId) {
+          setSelectedGroup(updatedGroup);
+        }
+
+        return updatedGroup;
+      } catch (error) {
+        console.error("Error removing admin:", error);
+        throw error;
+      }
+    },
+    [selectedGroup]
+  );
+
+  // Update group information
+  const updateGroup = useCallback(
+    async (groupId, updateData) => {
+      try {
+        const response = await axiosInstance.put(`/groups/${groupId}`, updateData);
+        const updatedGroup = response.data.data;
+
+        // Update groups list
+        setGroups((prev) =>
+          prev.map((g) => (g._id === groupId ? updatedGroup : g))
+        );
+
+        // Update selected group if it's the same
+        if (selectedGroup?._id === groupId) {
+          setSelectedGroup(updatedGroup);
+        }
+
+        return updatedGroup;
+      } catch (error) {
+        console.error("Error updating group:", error);
+        throw error;
+      }
+    },
+    [selectedGroup]
+  );
+
   // Select a group and fetch its messages
   const selectGroup = useCallback(
     async (group) => {
@@ -248,6 +386,100 @@ export const GroupProvider = ({ children }) => {
       );
     };
 
+    // Handle being added to a group
+    const handleGroupAdded = ({ group }) => {
+      setGroups((prev) => {
+        if (prev.some((g) => g._id === group._id)) {
+          return prev;
+        }
+        return [group, ...prev];
+      });
+    };
+
+    // Handle members added to group
+    const handleMembersAdded = ({ groupId, addedMembers }) => {
+      // Refetch group to get updated members list
+      if (selectedGroup?._id === groupId) {
+        axiosInstance.get(`/groups/${groupId}`).then((res) => {
+          setSelectedGroup(res.data.data);
+        });
+      }
+    };
+
+    // Handle being removed from a group
+    const handleGroupRemoved = ({ groupId }) => {
+      setGroups((prev) => prev.filter((g) => g._id !== groupId));
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup(null);
+        setGroupMessages([]);
+      }
+    };
+
+    // Handle member removed from group
+    const handleMemberRemoved = ({ groupId, removedMemberId }) => {
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup((prev) => ({
+          ...prev,
+          members: prev.members.filter(
+            (m) => m._id !== removedMemberId && m !== removedMemberId
+          ),
+          admins: prev.admins.filter(
+            (a) => a._id !== removedMemberId && a !== removedMemberId
+          ),
+        }));
+      }
+    };
+
+    // Handle promoted to admin
+    const handlePromotedToAdmin = ({ groupId }) => {
+      if (selectedGroup?._id === groupId) {
+        axiosInstance.get(`/groups/${groupId}`).then((res) => {
+          setSelectedGroup(res.data.data);
+        });
+      }
+    };
+
+    // Handle admin added
+    const handleAdminAdded = ({ groupId, newAdminId }) => {
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup((prev) => ({
+          ...prev,
+          admins: [...prev.admins, prev.members.find((m) => m._id === newAdminId)],
+        }));
+      }
+    };
+
+    // Handle demoted from admin
+    const handleDemotedFromAdmin = ({ groupId }) => {
+      if (selectedGroup?._id === groupId) {
+        axiosInstance.get(`/groups/${groupId}`).then((res) => {
+          setSelectedGroup(res.data.data);
+        });
+      }
+    };
+
+    // Handle admin removed
+    const handleAdminRemoved = ({ groupId, demotedAdminId }) => {
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup((prev) => ({
+          ...prev,
+          admins: prev.admins.filter(
+            (a) => a._id !== demotedAdminId && a !== demotedAdminId
+          ),
+        }));
+      }
+    };
+
+    // Handle group updated
+    const handleGroupUpdated = ({ groupId, group }) => {
+      setGroups((prev) =>
+        prev.map((g) => (g._id === groupId ? group : g))
+      );
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup(group);
+      }
+    };
+
     // Handle message reaction in group
     const handleGroupMessageReaction = ({ groupId, message }) => {
       if (selectedGroup?._id === groupId) {
@@ -265,12 +497,30 @@ export const GroupProvider = ({ children }) => {
     socket.on("group:created", handleGroupCreated);
     socket.on("group:memberLeft", handleMemberLeft);
     socket.on("group:messageReaction", handleGroupMessageReaction);
+    socket.on("group:added", handleGroupAdded);
+    socket.on("group:membersAdded", handleMembersAdded);
+    socket.on("group:removed", handleGroupRemoved);
+    socket.on("group:memberRemoved", handleMemberRemoved);
+    socket.on("group:promotedToAdmin", handlePromotedToAdmin);
+    socket.on("group:adminAdded", handleAdminAdded);
+    socket.on("group:demotedFromAdmin", handleDemotedFromAdmin);
+    socket.on("group:adminRemoved", handleAdminRemoved);
+    socket.on("group:updated", handleGroupUpdated);
 
     return () => {
       socket.off("group:newMessage", handleNewGroupMessage);
       socket.off("group:created", handleGroupCreated);
       socket.off("group:memberLeft", handleMemberLeft);
       socket.off("group:messageReaction", handleGroupMessageReaction);
+      socket.off("group:added", handleGroupAdded);
+      socket.off("group:membersAdded", handleMembersAdded);
+      socket.off("group:removed", handleGroupRemoved);
+      socket.off("group:memberRemoved", handleMemberRemoved);
+      socket.off("group:promotedToAdmin", handlePromotedToAdmin);
+      socket.off("group:adminAdded", handleAdminAdded);
+      socket.off("group:demotedFromAdmin", handleDemotedFromAdmin);
+      socket.off("group:adminRemoved", handleAdminRemoved);
+      socket.off("group:updated", handleGroupUpdated);
     };
   }, [socket, authUser, selectedGroup]);
 
@@ -295,6 +545,11 @@ export const GroupProvider = ({ children }) => {
     leaveGroup,
     setSelectedGroup,
     reactToGroupMessage,
+    addMembers,
+    removeMember,
+    addAdmin,
+    removeAdmin,
+    updateGroup,
   };
 
   return (
