@@ -11,8 +11,8 @@ export default function ChatDashboard() {
   const { selectedUser, setSelectedUser } = useChat();
   const { selectedGroup, selectGroup, clearSelectedGroup } = useGroup();
   const [isInfoSidebarOpen, setIsInfoSidebarOpen] = useState(false);
-  const [pendingHighlightMessageId, setPendingHighlightMessageId] =
-    useState(null);
+  const [pendingHighlightMessageId, setPendingHighlightMessageId] = useState(null);
+
   const chatAreaRef = useRef(null);
 
   // Handle message highlight from sidebar search

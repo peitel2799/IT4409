@@ -46,9 +46,10 @@ export default function FriendsList({ type }) {
 
     // Filter by search query
     return rawData.filter(item => {
-      // ĐỒNG BỘ MODEL: Ưu tiên fullName
+      const search = searchQuery.toLowerCase();
       const name = item?.fullName || item?.name || "";
-      return name.toLowerCase().includes(searchQuery.toLowerCase());
+      const email = (item?.email || "").toLowerCase()
+      return name.includes(search) || email.includes(search);
     });
   };
 

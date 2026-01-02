@@ -81,7 +81,7 @@ export default function CallsDashboard() {
   };
 
   const openCallWindow = (contact, isVideo) => {
-      const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName)}`;
+      const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName)}&background=random`;
 
       const params = {
         name: contact.fullName,

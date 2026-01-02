@@ -57,7 +57,7 @@ export default function SentRequests() {
                         }`}
                 >
                     <img
-                        src={req.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.fullName || 'U')}`}
+                        src={req.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.fullName || 'U')}&background=random`}
                         alt={req.fullName}
                         className={`${viewMode === 'grid' ? 'w-16 h-16' : 'w-10 h-10'} rounded-full object-cover border border-gray-100`}
                     />

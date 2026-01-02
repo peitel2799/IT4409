@@ -20,7 +20,7 @@ export default function ChatInput({ chat }) {
 
   const handleTextChange = (e) => {
     setText(e.target.value);
-    if (receiverId && e.target.value) {
+    if (receiverId && e.target.value && !chat?.isSelfChat) {
       emitTyping(receiverId);
     }
   };
@@ -30,8 +30,8 @@ export default function ChatInput({ chat }) {
     if ((!text.trim() && !imageFile) || !chat) return;
     setLoading(true);
 
-    if (receiverId) {
-      stopTyping(receiverId);
+    if (receiverId && !chat?.isSelfChat) {
+    stopTyping(receiverId);
     }
 
     try {

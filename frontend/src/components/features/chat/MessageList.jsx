@@ -108,17 +108,22 @@ const MessageList = forwardRef(function MessageList({ chat, highlightMessageId }
             </span>
           </div>
           <div className="space-y-1">
-            {msgs.map((msg, index) => {
+           {msgs.map((msg, index) => {
               const msgId = msg._id || msg.id;
+              
               const senderId = msg.senderId?._id || msg.senderId;
-              const isMe = senderId === authUser?._id;
+              const isMe = String(senderId) === String(authUser?._id);
+
               const getFallbackAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=random`;
 
               const messageAvatar = isMe
                 ? (authUser?.profilePic || getFallbackAvatar(authUser?.fullName))
                 : (msg.senderId?.profilePic || chat.profilePic || getFallbackAvatar(chat.fullName));
 
-              const isLastInGroup = !msgs[index + 1] || (msgs[index + 1].senderId?._id || msgs[index + 1].senderId) !== senderId;
+              const nextMsg = msgs[index + 1];
+              const nextSenderId = nextMsg ? (nextMsg.senderId?._id || nextMsg.senderId) : null;
+              const isLastInGroup = !nextMsg || String(nextSenderId) !== String(senderId);
+
               const isHighlighted = highlightMessageId === msgId;
 
               return (

@@ -61,7 +61,7 @@ export default function CallHistoryItem({ call, onCall, onVideo, onMessage }) {
 
   const { icon: TypeIcon, color, label } = getCallInfo();
   const contact = call.contact || {};
-  const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName || 'U')}`;
+  const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName || 'U')}&background=random`;
   const isMissed = call.status === "missed" || call.status === "rejected" || call.status === "busy" || call.status === "unavailable";
 
   return (

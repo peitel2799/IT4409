@@ -205,11 +205,9 @@ export default function GroupChatArea({
           </div>
         ) : (
           groupMessages.map((message) => {
-            const isOwn =
-              message.senderId._id === authUser._id ||
-              message.senderId === authUser._id;
-            const senderName =
-              message.senderId.fullName || message.senderId.email || "Unknown";
+            const senderId = message.senderId?._id || message.senderId; 
+            const isOwn = String(senderId) === String(authUser?._id);
+            const senderName = message.senderId.fullName || message.senderId.email || "Unknown";
             const senderAvatar =
               message.senderId.profilePic ||
               `https://ui-avatars.com/api/?name=${encodeURIComponent(

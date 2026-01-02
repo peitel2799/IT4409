@@ -4,7 +4,7 @@ import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import MessageSearch from "./MessageSearch";
 import { MessageCircleMore } from "lucide-react";
-
+import { useFriend } from "../../../context/FriendContext";
 const ChatArea = forwardRef(function ChatArea({
   chat,
   onToggleInfoSidebar,
@@ -15,7 +15,10 @@ const ChatArea = forwardRef(function ChatArea({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highlightMessageId, setHighlightMessageId] = useState(null);
   const messageListRef = useRef(null);
+  const {friends} = useFriend();
 
+  //kiểm tra có phải bạn bè không
+  const isFriend = friends.some(f => f._id === chat?._id); //kiểm tra có phải bạn bè không
   // Toggle search panel
   const handleToggleSearch = useCallback(() => {
     setIsSearchOpen((prev) => !prev);
@@ -127,7 +130,15 @@ const ChatArea = forwardRef(function ChatArea({
         chat={chat}
         highlightMessageId={highlightMessageId}
       />
-      <ChatInput chat={chat} />
+      {isFriend ? (
+        <ChatInput /> 
+      ) : (
+        <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-500 italic">
+            Need to be friends to send messages. Please add this user as a friend first.
+          </p>
+        </div>
+      )}
 
       {/* CSS for message highlighting */}
       <style jsx>{`

@@ -297,3 +297,55 @@ export const sendGroupMessageService = async (senderId, groupId, text, imageUrl)
 
     return { message: newMessage, group };
 };
+
+/**
+ * Xóa toàn bộ cuộc trò chuyện giữa người dùng hiện tại và người chat
+ */
+export const deleteConversationService = async (myId, partnerId) => {
+    if (!partnerId) {
+        throw new AppError("Partner ID is required", 400);
+    }
+
+    const result = await Message.deleteMany({
+        groupId: null, // Chỉ xóa tin nhắn 1-1, không xóa tin nhắn nhóm
+        $or: [
+            { senderId: myId, receiverId: partnerId },
+            { senderId: partnerId, receiverId: myId },
+        ],
+    });
+
+    if (result.deletedCount === 0) {
+        throw new AppError("No conversation found to delete", 404);
+    }
+
+    return {
+        success: true,
+        message: "Conversation deleted successfully",
+        deletedCount: result.deletedCount,
+    };
+};
+
+
+/** * Xóa toàn bộ cuộc trò chuyện nhóm
+ */
+export const deleteGroupConversationService = async (groupId, userId) => {
+    if (!groupId) {
+        throw new AppError("Group ID is required", 400);
+    }
+
+    //Kiểm tra xem nhóm có tồn tại và người dùng có phải thành viên k
+    const group = await Group.findById(groupId);
+    if (!group) {
+        throw new AppError("Group not found", 404);
+    }
+
+    
+    //Xóa tất cả tin nhắn có groupId 
+    const result = await Message.deleteMany({ groupId: groupId });
+
+    return {
+        success: true,
+        message: "Group conversation history deleted successfully",
+        deletedCount: result.deletedCount,
+    };
+};

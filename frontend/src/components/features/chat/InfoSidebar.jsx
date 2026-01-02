@@ -40,23 +40,12 @@ export default function InfoSidebar({ chat, onClose }) {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="mt-4">
-          <div className="flex items-center bg-gray-50 rounded-xl p-2.5 mb-4">
-            <Search size={16} className="text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search in chat..."
-              className="bg-transparent text-sm ml-2 w-full focus:outline-none"
-            />
-          </div>
 
-          {/* Delete Button */}
+          {/* Delete Button
           <button className="w-full bg-pink-500 text-white px-3 py-2 rounded-lg hover:bg-pink-600 transition">
             Delete Conversation
-          </button>
+          </button> */}
         </div>
       </div>
-    </div>
   );
 }
