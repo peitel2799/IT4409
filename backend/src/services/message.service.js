@@ -270,10 +270,25 @@ export const getGroupMessagesService = async (groupId, userId) => {
     return messages;
 };
 
+
+export const getSharedMediaService = async (authUserId, otherUserId) => {
+    const images = await Message.find({
+        $or: [
+            { senderId: authUserId, receiverId: otherUserId },
+            { senderId: otherUserId, receiverId: authUserId },
+        ],
+        image: { $ne: null },
+    })
+        .select("image messageId createdAt")
+        .sort({ createdAt: -1 });
+
+    return images;
+};
+
 /**
  * Send a message to a group
  */
-export const sendGroupMessageService = async (senderId, groupId, text, imageUrl, audioUrl) => {
+export const sendGroupMessageService = async ({ senderId, groupId, text, imageUrl, audioUrl }) => {
     if (!text && !imageUrl && !audioUrl) {
         throw new AppError("Text, image or audio is required", 400);
     }

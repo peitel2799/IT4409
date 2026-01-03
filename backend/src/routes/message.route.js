@@ -4,13 +4,14 @@ import {
   getChatPartners,
   getGroupMessages,
   getMessagesByUserId,
+  getSharedMedia,
   markAsRead,
   markMessageAsRead,
   reactToMessage,
   searchAllMessages,
   searchMessages,
   sendGroupMessage,
-  sendMessage,
+  sendMessage
 } from "../controllers/message.controller.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -27,6 +28,8 @@ router.get("/chats", getChatPartners);
 router.get("/search", searchAllMessages);
 router.get("/search/:partnerId", searchMessages);
 
+
+router.get("/:id/media", getSharedMedia);
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", upload.fields([{ name: 'image', maxCount: 1 }, { name: 'audio', maxCount: 1 }]), sendMessage);
 

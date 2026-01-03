@@ -5,13 +5,14 @@ import {
   getChatPartnersService,
   getGroupMessagesService,
   getMessagesByUserIdService,
+  getSharedMediaService,
   markMessagesAsReadService,
   markSingleMessageAsReadService,
   reactToMessageService,
   searchAllMessagesService,
   searchMessagesService,
   sendGroupMessageService,
-  sendMessageService,
+  sendMessageService
 } from "../services/message.service.js";
 
 // Helper to emit to all sockets of a user
@@ -201,6 +202,20 @@ export const getGroupMessages = async (req, res) => {
   } catch (error) {
     console.error("getGroupMessages:", error);
     res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
+  }
+};
+
+export const getSharedMedia = async (req, res) => {
+  try {
+    const { id: userToChatId } = req.params;
+    const myId = req.user._id;
+
+    const media = await getSharedMediaService(myId, userToChatId);
+
+    res.status(200).json(media);
+  } catch (error) {
+    console.log("Error in getSharedMedia controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

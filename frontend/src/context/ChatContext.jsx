@@ -32,7 +32,7 @@ export const ChatProvider = ({ children }) => {
 
     // 1. Sắp xếp Tin nhắn trong khung chat (Cũ ở trên - Mới nhất ở dưới cùng)
     const sortMessagesChronologically = useCallback((msgs) => {
-        return [...msgs].sort((a, b) => 
+        return [...msgs].sort((a, b) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
     }, []);
@@ -65,11 +65,11 @@ export const ChatProvider = ({ children }) => {
         _setSelectedUser(normalizedUser);
 
         if (!isSelf) {
-            markAsRead(user._id); 
+            markAsRead(user._id);
         }
 
         setHomeStats((prev) => {
-            const updatedChats = prev.chats.map(chat => 
+            const updatedChats = prev.chats.map(chat =>
                 chat._id === user._id ? { ...chat, unreadCount: 0 } : chat
             );
             const isExist = prev.chats.some((chat) => chat._id === user._id);
@@ -77,7 +77,7 @@ export const ChatProvider = ({ children }) => {
                 const newChatEntry = {
                     ...normalizedUser,
                     profilePic: isSelf ? "https://cdn-icons-png.flaticon.com/512/4144/4144099.png" : (user.profilePic || user.avatar),
-                    lastMessage: "", 
+                    lastMessage: "",
                     lastMessageTime: new Date().toISOString(),
                     unreadCount: 0,
                     isOnline: true,
@@ -195,10 +195,10 @@ export const ChatProvider = ({ children }) => {
             setHomeStats((prev) => {
                 const updatedChats = prev.chats.map((chat) =>
                     chat._id === receiverId
-                        ? { 
-                            ...chat, 
-                            lastMessage: newMessage.text || "Sent an image", 
-                            lastMessageTime: newMessage.createdAt 
+                        ? {
+                            ...chat,
+                            lastMessage: newMessage.text || "Sent an image",
+                            lastMessageTime: newMessage.createdAt
                         }
                         : chat
                 );
@@ -230,51 +230,62 @@ export const ChatProvider = ({ children }) => {
         }
     }, [socket, selectedUser]);
 
+    const getSharedMedia = useCallback(async (partnerId) => {
+        try {
+            const res = await axiosInstance.get(`/messages/${partnerId}/media`);
+            return res.data;
+        } catch (error) {
+            console.error("Failed to get shared media:", error);
+            // toast.error("Failed to load shared media"); // Optional toast
+            return [];
+        }
+    }, [axiosInstance]);
+
     // --- SOCKET LISTENERS ---
     useEffect(() => {
         if (socket && authUser) {
-                    
+
             socket.on("newMessage", (message) => {
-            const senderId = message.senderId?._id || message.senderId;
-            if (senderId === authUser._id) return;
+                const senderId = message.senderId?._id || message.senderId;
+                if (senderId === authUser._id) return;
 
-            // Kiểm tra xem sender có phải là người đang chat trực tiếp không
-            const isFromSelectedUser = selectedUser && String(senderId) === String(selectedUser._id);
+                // Kiểm tra xem sender có phải là người đang chat trực tiếp không
+                const isFromSelectedUser = selectedUser && String(senderId) === String(selectedUser._id);
 
-            if (isFromSelectedUser) {
-                setMessages((prev) => sortMessagesChronologically([...prev, message]));
-                markAsRead(selectedUser._id); 
-            }
-
-            setHomeStats((prev) => {
-                const chatExists = prev.chats.find((c) => c._id === senderId);
-                
-                if (chatExists) {
-                    const updatedChats = prev.chats.map((chat) => {
-                        if (chat._id === senderId) {
-                            return {
-                                ...chat,
-                                unreadCount: isFromSelectedUser ? 0 : (chat.unreadCount || 0) + 1, // Logic chấm đỏ
-                                lastMessage: message.text || "Sent an image",
-                                lastMessageTime: message.createdAt // Cập nhật thời gian để sắp xếp
-                            };
-                        }
-                        return chat;
-                    });
-                    // Đẩy hội thoại vừa có tin nhắn lên đầu (ngay sau Cloud)
-                    return { ...prev, chats: sortChatsWithCloudOnTop(updatedChats) };
-                } else {
-                    getHomeStats(); // Load lại nếu là người lạ
-                    return prev;
+                if (isFromSelectedUser) {
+                    setMessages((prev) => sortMessagesChronologically([...prev, message]));
+                    markAsRead(selectedUser._id);
                 }
+
+                setHomeStats((prev) => {
+                    const chatExists = prev.chats.find((c) => c._id === senderId);
+
+                    if (chatExists) {
+                        const updatedChats = prev.chats.map((chat) => {
+                            if (chat._id === senderId) {
+                                return {
+                                    ...chat,
+                                    unreadCount: isFromSelectedUser ? 0 : (chat.unreadCount || 0) + 1, // Logic chấm đỏ
+                                    lastMessage: message.text || "Sent an image",
+                                    lastMessageTime: message.createdAt // Cập nhật thời gian để sắp xếp
+                                };
+                            }
+                            return chat;
+                        });
+                        // Đẩy hội thoại vừa có tin nhắn lên đầu (ngay sau Cloud)
+                        return { ...prev, chats: sortChatsWithCloudOnTop(updatedChats) };
+                    } else {
+                        getHomeStats(); // Load lại nếu là người lạ
+                        return prev;
+                    }
+                });
             });
-        });
 
             socket.on("messagesRead", (data) => {
-                setMessages((prev) => prev.map((msg) => 
+                setMessages((prev) => prev.map((msg) =>
                     (msg.senderId === authUser._id || msg.senderId?._id === authUser._id) &&
-                    (msg.receiverId === data.partnerId || msg.receiverId?._id === data.partnerId)
-                    ? { ...msg, isRead: true } : msg
+                        (msg.receiverId === data.partnerId || msg.receiverId?._id === data.partnerId)
+                        ? { ...msg, isRead: true } : msg
                 ));
             });
 
@@ -314,7 +325,7 @@ export const ChatProvider = ({ children }) => {
 
     const value = {
         allContacts, homeStats, isUsersLoading, getAllContacts, getHomeStats,
-        messages, isMessagesLoading, getMessagesByUserId, sendMessage, markAsRead, reactToMessage,
+        messages, isMessagesLoading, getMessagesByUserId, sendMessage, markAsRead, reactToMessage, getSharedMedia,
         selectedUser, setSelectedUser, isSoundEnabled, toggleSound
     };
 

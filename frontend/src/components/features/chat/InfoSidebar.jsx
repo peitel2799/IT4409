@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, Image as ImageIcon, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useChat } from "../../../context/ChatContext";
 
 const InfoItem = ({ icon: Icon, label }) => (
   <button className="flex items-center w-full p-3 hover:bg-gray-50 rounded-xl transition-colors text-gray-600 gap-3">
@@ -12,11 +13,23 @@ const InfoItem = ({ icon: Icon, label }) => (
 
 export default function InfoSidebar({ chat, onClose }) {
   const [isMediaOpen, setIsMediaOpen] = useState(false);
+  const [sharedMedia, setSharedMedia] = useState([]);
+  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
+  const { getSharedMedia } = useChat();
 
-  const mockImages = Array.from({ length: 9 }).map((_, i) => ({
-    id: i,
-    url: `https://picsum.photos/seed/${i + 133}/300/300`,
-  }));
+  useEffect(() => {
+    const fetchMedia = async () => {
+      if (!chat?._id) return;
+      setIsLoadingMedia(true);
+      const media = await getSharedMedia(chat._id);
+      setSharedMedia(media || []);
+      setIsLoadingMedia(false);
+    };
+
+    if (isMediaOpen) {
+      fetchMedia();
+    }
+  }, [chat?._id, getSharedMedia, isMediaOpen]);
 
   const avatarUrl = chat?.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat?.fullName || 'User')}&background=random`;
   return (
@@ -64,12 +77,14 @@ export default function InfoSidebar({ chat, onClose }) {
 
           {isMediaOpen && (
             <div className="p-3 animate-in fade-in slide-in-from-top-2 duration-200">
-              {mockImages.length > 0 ? (
+              {isLoadingMedia ? (
+                <div className="text-center py-4 text-xs text-gray-400">Loading...</div>
+              ) : sharedMedia.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-2">
-                  {mockImages.map((img) => (
-                    <div key={img.id} className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg bg-gray-100">
+                  {sharedMedia.map((msg) => (
+                    <div key={msg._id || msg.messageId} className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg bg-gray-100">
                       <img
-                        src={img.url}
+                        src={msg.image}
                         alt="Shared"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         loading="lazy"
