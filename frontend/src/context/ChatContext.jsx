@@ -64,7 +64,14 @@ export const ChatProvider = ({ children }) => {
 
         _setSelectedUser(normalizedUser);
 
+        if (!isSelf) {
+            markAsRead(user._id); 
+        }
+
         setHomeStats((prev) => {
+            const updatedChats = prev.chats.map(chat => 
+                chat._id === user._id ? { ...chat, unreadCount: 0 } : chat
+            );
             const isExist = prev.chats.some((chat) => chat._id === user._id);
             if (!isExist) {
                 const newChatEntry = {
@@ -183,7 +190,6 @@ export const ChatProvider = ({ children }) => {
             });
 
             const newMessage = res.data;
-            // Optimistic update: Thêm tin nhắn và sắp xếp lại
             setMessages((prev) => sortMessagesChronologically([...prev, newMessage]));
 
             setHomeStats((prev) => {
@@ -193,7 +199,7 @@ export const ChatProvider = ({ children }) => {
                             ...chat, 
                             lastMessage: newMessage.text || "Sent an image", 
                             lastMessageTime: newMessage.createdAt 
-                          }
+                        }
                         : chat
                 );
                 return { ...prev, chats: sortChatsWithCloudOnTop(updatedChats) };
@@ -227,39 +233,42 @@ export const ChatProvider = ({ children }) => {
     // --- SOCKET LISTENERS ---
     useEffect(() => {
         if (socket && authUser) {
+                    
             socket.on("newMessage", (message) => {
-                const senderId = message.senderId?._id || message.senderId;
+            const senderId = message.senderId?._id || message.senderId;
+            if (senderId === authUser._id) return;
+
+            // Kiểm tra xem sender có phải là người đang chat trực tiếp không
+            const isFromSelectedUser = selectedUser && String(senderId) === String(selectedUser._id);
+
+            if (isFromSelectedUser) {
+                setMessages((prev) => sortMessagesChronologically([...prev, message]));
+                markAsRead(selectedUser._id); 
+            }
+
+            setHomeStats((prev) => {
+                const chatExists = prev.chats.find((c) => c._id === senderId);
                 
-                // CHẶN TIN TRÙNG LẶP: Nếu mình là người gửi, bỏ qua vì sendMessage đã xử lý
-                if (senderId === authUser._id) return;
-
-                const isFromSelectedUser = selectedUser && senderId === selectedUser._id;
-
-                if (isFromSelectedUser) {
-                    setMessages((prev) => sortMessagesChronologically([...prev, message]));
-                    markAsRead(selectedUser._id);
+                if (chatExists) {
+                    const updatedChats = prev.chats.map((chat) => {
+                        if (chat._id === senderId) {
+                            return {
+                                ...chat,
+                                unreadCount: isFromSelectedUser ? 0 : (chat.unreadCount || 0) + 1, // Logic chấm đỏ
+                                lastMessage: message.text || "Sent an image",
+                                lastMessageTime: message.createdAt // Cập nhật thời gian để sắp xếp
+                            };
+                        }
+                        return chat;
+                    });
+                    // Đẩy hội thoại vừa có tin nhắn lên đầu (ngay sau Cloud)
+                    return { ...prev, chats: sortChatsWithCloudOnTop(updatedChats) };
+                } else {
+                    getHomeStats(); // Load lại nếu là người lạ
+                    return prev;
                 }
-
-                setHomeStats((prev) => {
-                    const chatExists = prev.chats.find((c) => c._id === senderId);
-                    if (chatExists) {
-                        const updatedChats = prev.chats.map((chat) =>
-                            chat._id === senderId
-                                ? {
-                                    ...chat,
-                                    unreadCount: isFromSelectedUser ? 0 : (chat.unreadCount || 0) + 1,
-                                    lastMessage: message.text || "Sent an image",
-                                    lastMessageTime: message.createdAt
-                                }
-                                : chat
-                        );
-                        return { ...prev, chats: sortChatsWithCloudOnTop(updatedChats) };
-                    } else {
-                        getHomeStats();
-                        return prev;
-                    }
-                });
             });
+        });
 
             socket.on("messagesRead", (data) => {
                 setMessages((prev) => prev.map((msg) => 
