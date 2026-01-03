@@ -18,7 +18,7 @@ const ChatArea = forwardRef(function ChatArea({
   const {friends} = useFriend();
 
   //kiểm tra có phải bạn bè không
-  const isFriend = friends.some(f => f._id === chat?._id); //kiểm tra có phải bạn bè không
+  const isFriend = friends.some(f => f._id === chat?._id) || chat?.isSelfChat;
   // Toggle search panel
   const handleToggleSearch = useCallback(() => {
     setIsSearchOpen((prev) => !prev);
@@ -131,7 +131,7 @@ const ChatArea = forwardRef(function ChatArea({
         highlightMessageId={highlightMessageId}
       />
       {isFriend ? (
-        <ChatInput /> 
+        <ChatInput  chat={chat}/> 
       ) : (
         <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
           <p className="text-sm text-gray-500 italic">

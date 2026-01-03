@@ -1,22 +1,28 @@
 import { useChat } from "../../../context/ChatContext";
-import { useFriend } from "../../../context/FriendContext";
-import { useSocket } from "../../../context/SocketContext";
-
+import { useFriend } from "../../../context/FriendContext"; //
+import { useSocket } from "../../../context/SocketContext"; //
+import { useEffect } from "react";
 export default function RightSidebar({ onStartChat }) {
-  const { allContacts } = useChat();
-  const { friendRequests, acceptFriendRequest, rejectFriendRequest } =
-    useFriend();
+  const { friends, getFriends } = useFriend();
+  const { friendRequests, acceptFriendRequest, rejectFriendRequest } = useFriend();
   const { onlineUsers } = useSocket();
 
-  // Filter online friends using onlineUsers array
-  // Use Array.isArray to guard against API returning error objects
-  const safeContacts = Array.isArray(allContacts) ? allContacts : [];
+  useEffect(() => {
+    if (friends.length === 0) {
+      getFriends();
+    }
+  }, [getFriends, friends.length]);
+
+  const safeFriends = Array.isArray(friends) ? friends : [];
   const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
-  const onlineFriends = safeContacts.filter((c) =>
-    safeOnlineUsers.includes(c._id)
+
+  //Lọc bạn bè đang online
+  const onlineFriends = safeFriends.filter((friend) => 
+  safeOnlineUsers.includes(String(friend._id))
   );
 
-  // Get avatar with fallback
+  
+
   const getAvatar = (user) =>
     user.profilePic ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -25,7 +31,7 @@ export default function RightSidebar({ onStartChat }) {
 
   const renderFriendItem = (user, showButtons = false) => (
     <div
-      key={user.id || user._id}
+      key={user._id}
       className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
         !showButtons ? "hover:bg-gray-50 cursor-pointer" : ""
       }`}
@@ -66,7 +72,7 @@ export default function RightSidebar({ onStartChat }) {
 
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-100 p-5 overflow-y-auto">
-      {/* Requests Section */}
+      {/* Requests Section*/}
       {Array.isArray(friendRequests) && friendRequests.length > 0 && (
         <div className="mb-5 pb-5 border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
