@@ -21,7 +21,7 @@ export default function RightSidebar({ onStartChat }) {
     user.profilePic ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       user.fullName || user.name || "U"
-    )}`;
+    )}&background=random`;
 
   const renderFriendItem = (user, showButtons = false) => (
     <div
