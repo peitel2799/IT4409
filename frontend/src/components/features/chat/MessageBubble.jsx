@@ -60,12 +60,12 @@ export default function MessageBubble({ message, isMe, avatar, isLastInGroup }) 
         )}
 
         {/* Message Content */}
-        <div className={`px-4 py-2 text-[14.5px] leading-relaxed shadow-sm break-words relative z-0
+        <div className={`text-[14.5px] break-words relative z-0
             ${!message.image && ((/^(?:\p{Extended_Pictographic}|\s)+$/u.test(message.text)))
-            ? "bg-transparent text-[40px] shadow-none border-none leading-none px-0 py-0"
+            ? "bg-transparent text-[40px] shadow-none border-none leading-none"
             : (isMe
-              ? "bg-gradient-to-br from-pink-500 to-rose-400 text-white rounded-[20px] rounded-tr-sm"
-              : "bg-white border border-gray-100 text-gray-800 rounded-[20px] rounded-tl-sm")
+              ? "bg-gradient-to-br shadown-sm py-2 px-4 from-pink-500 to-rose-400 text-white rounded-[20px] rounded-tr-sm"
+              : "bg-white shadow-sm py-2 px-4 border border-gray-100 text-gray-800 rounded-[20px] rounded-tl-sm")
           }`}>
           {message.image && (
             <img
