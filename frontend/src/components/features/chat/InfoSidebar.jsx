@@ -1,5 +1,6 @@
-import { ChevronDown, ChevronRight, Image as ImageIcon, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Cloud, Image as ImageIcon, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
 import { useChat } from "../../../context/ChatContext";
 
 const InfoItem = ({ icon: Icon, label }) => (
@@ -16,6 +17,9 @@ export default function InfoSidebar({ chat, onClose }) {
   const [sharedMedia, setSharedMedia] = useState([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const { getSharedMedia } = useChat();
+  const { authUser } = useAuth();
+
+  const isSelfChat = chat.isSelfChat || chat._id === authUser?._id;
 
   useEffect(() => {
     const fetchMedia = async () => {
@@ -49,15 +53,20 @@ export default function InfoSidebar({ chat, onClose }) {
       <div className="flex-1 overflow-y-auto p-4">
         {/* Avatar + Info */}
         <div className="flex flex-col items-center py-6 border-b border-gray-200">
-          <img
-            src={avatarUrl}
-            alt={chat.fullName}
-            className="w-24 h-24 rounded-full mb-3 border-4 border-gray-50"
-          />
-          <h2 className="text-xl font-bold text-gray-800">{chat.fullName}</h2>
-          <p className="text-sm text-gray-400">
+          {isSelfChat ? (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center border shadow-sm flex-shrink-0">
+              <Cloud size={50} className="text-white" />
+            </div>
+          ) : (
+            <img
+              src={avatarUrl}
+              alt={chat.fullName}
+              className="w-24 h-24 rounded-full mb-3 border-4 border-gray-50"
+            />)}
+          <h2 className="text-xl font-bold text-gray-800">{isSelfChat ? "My Cloud" : chat.fullName}</h2>
+          {!isSelfChat && <p className="text-sm text-gray-400">
             {chat.email || "No email provided"}
-          </p>
+          </p>}
         </div>
 
         {/* Shared Media Section */}
@@ -82,7 +91,11 @@ export default function InfoSidebar({ chat, onClose }) {
               ) : sharedMedia.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-2">
                   {sharedMedia.map((msg) => (
-                    <div key={msg._id || msg.messageId} className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg bg-gray-100">
+                    <div
+                      key={msg._id || msg.messageId}
+                      onClick={() => window.open(msg.image, '_blank')}
+                      className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg bg-gray-100"
+                    >
                       <img
                         src={msg.image}
                         alt="Shared"

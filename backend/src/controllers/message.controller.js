@@ -237,7 +237,7 @@ export const sendGroupMessage = async (req, res) => {
       }
     }
 
-    const { message, group } = await sendGroupMessageService(senderId, groupId, text, imageUrl, audioUrl);
+    const { message, group } = await sendGroupMessageService({ senderId, groupId, text, imageUrl, audioUrl });
 
     // Emit socket event to all group members (except sender)
     group.members.forEach((memberId) => {
