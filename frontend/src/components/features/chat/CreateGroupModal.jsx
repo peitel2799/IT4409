@@ -32,12 +32,12 @@ export default function CreateGroupModal({ isOpen, onClose }) {
     e.preventDefault();
 
     if (!groupName.trim()) {
-      toast.error("Vui lòng nhập tên nhóm");
+      toast.error("Please enter group name");
       return;
     }
 
     if (selectedMembers.length === 0) {
-      toast.error("Vui lòng chọn ít nhất 1 thành viên");
+      toast.error("Please select at least 1 member");
       return;
     }
 
@@ -48,10 +48,10 @@ export default function CreateGroupModal({ isOpen, onClose }) {
         description: description.trim(),
         memberIds: selectedMembers,
       });
-      toast.success("Tạo nhóm thành công!");
+      toast.success("Group created successfully!");
       handleClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi tạo nhóm");
+      toast.error(error.response?.data?.message || "Error creating group");
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +72,7 @@ export default function CreateGroupModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-pink-500" />
-            <h2 className="text-lg font-semibold">Tạo nhóm mới</h2>
+            <h2 className="text-lg font-semibold">Create New Group</h2>
           </div>
           <button
             onClick={handleClose}
@@ -86,13 +86,13 @@ export default function CreateGroupModal({ isOpen, onClose }) {
           {/* Group Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tên nhóm *
+              Group Name *
             </label>
             <input
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Nhập tên nhóm..."
+              placeholder="Enter group name..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
               maxLength={100}
             />
@@ -101,12 +101,12 @@ export default function CreateGroupModal({ isOpen, onClose }) {
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mô tả
+              Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Mô tả nhóm (tùy chọn)..."
+              placeholder="Group description (optional)..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none resize-none"
               rows={2}
               maxLength={500}
@@ -116,7 +116,7 @@ export default function CreateGroupModal({ isOpen, onClose }) {
           {/* Member Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Thêm thành viên ({selectedMembers.length} đã chọn)
+              Add Members ({selectedMembers.length} selected)
             </label>
 
             {/* Search */}
@@ -126,7 +126,7 @@ export default function CreateGroupModal({ isOpen, onClose }) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm bạn bè..."
+                placeholder="Search friends..."
                 className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none text-sm"
               />
             </div>
@@ -135,16 +135,15 @@ export default function CreateGroupModal({ isOpen, onClose }) {
             <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
               {filteredFriends.length === 0 ? (
                 <p className="text-center text-gray-500 py-4 text-sm">
-                  Không tìm thấy bạn bè
+                  No friends found
                 </p>
               ) : (
                 filteredFriends.map((friend) => (
                   <div
                     key={friend._id}
                     onClick={() => toggleMember(friend._id)}
-                    className={`flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                      selectedMembers.includes(friend._id) ? "bg-pink-50" : ""
-                    }`}
+                    className={`flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${selectedMembers.includes(friend._id) ? "bg-pink-50" : ""
+                      }`}
                   >
                     <img
                       src={
@@ -174,7 +173,7 @@ export default function CreateGroupModal({ isOpen, onClose }) {
             }
             className="w-full py-2 bg-pink-500 text-white rounded-lg font-medium hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Đang tạo..." : "Tạo nhóm"}
+            {isLoading ? "Creating..." : "Create Group"}
           </button>
         </form>
       </div>

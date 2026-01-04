@@ -17,17 +17,17 @@ export default function EditGroupModal({ isOpen, onClose, group }) {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error("Tên nhóm không được để trống");
+      toast.error("Group name cannot be empty");
       return;
     }
 
     if (name.trim().length > 100) {
-      toast.error("Tên nhóm tối đa 100 ký tự");
+      toast.error("Group name maximum 100 characters");
       return;
     }
 
     if (description.trim().length > 500) {
-      toast.error("Mô tả tối đa 500 ký tự");
+      toast.error("Description maximum 500 characters");
       return;
     }
 
@@ -40,15 +40,15 @@ export default function EditGroupModal({ isOpen, onClose, group }) {
       if (avatar !== (group.avatar || "")) updateData.avatar = avatar;
 
       if (Object.keys(updateData).length === 0) {
-        toast.error("Không có thay đổi nào");
+        toast.error("No changes made");
         return;
       }
 
       await updateGroup(group._id, updateData);
-      toast.success("Cập nhật nhóm thành công!");
+      toast.success("Group updated successfully!");
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi cập nhật nhóm");
+      toast.error(error.response?.data?.message || "Error updating group");
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +73,7 @@ export default function EditGroupModal({ isOpen, onClose, group }) {
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-purple-500" />
-            <h2 className="text-lg font-semibold">Chỉnh sửa nhóm</h2>
+            <h2 className="text-lg font-semibold">Edit Group</h2>
           </div>
           <button
             onClick={onClose}
@@ -115,13 +115,13 @@ export default function EditGroupModal({ isOpen, onClose, group }) {
           {/* Group Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tên nhóm *
+              Group Name *
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nhập tên nhóm..."
+              placeholder="Enter group name..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
               maxLength={100}
             />
@@ -131,12 +131,12 @@ export default function EditGroupModal({ isOpen, onClose, group }) {
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mô tả
+              Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Nhập mô tả nhóm..."
+              placeholder="Enter group description..."
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none"
               maxLength={500}
@@ -153,14 +153,14 @@ export default function EditGroupModal({ isOpen, onClose, group }) {
               onClick={onClose}
               className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
               className="flex-1 py-2.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
+              {isLoading ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

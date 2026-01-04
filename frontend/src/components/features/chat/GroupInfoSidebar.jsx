@@ -41,31 +41,31 @@ export default function GroupInfoSidebar({ onClose }) {
     selectedGroup.createdBy === authUser._id;
 
   const handleLeaveGroup = async () => {
-    if (!confirm("Bạn có chắc muốn rời khỏi nhóm này?")) return;
+    if (!confirm("Are you sure you want to leave this group?")) return;
 
     setIsLeaving(true);
     try {
       await leaveGroup(selectedGroup._id);
-      toast.success("Đã rời khỏi nhóm");
+      toast.success("Left group");
       clearSelectedGroup();
       onClose?.();
     } catch (error) {
-      toast.error("Lỗi khi rời nhóm");
+      toast.error("Error leaving group");
     } finally {
       setIsLeaving(false);
     }
   };
 
   const handleRemoveMember = async (memberId, memberName) => {
-    if (!confirm(`Bạn có chắc muốn xóa ${memberName} khỏi nhóm?`)) return;
+    if (!confirm(`Are you sure you want to remove ${memberName} from the group?`)) return;
 
     setLoadingAction(memberId);
     try {
       await removeMember(selectedGroup._id, memberId);
-      toast.success(`Đã xóa ${memberName} khỏi nhóm`);
+      toast.success(`Removed ${memberName} from group`);
       setOpenMemberMenu(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi xóa thành viên");
+      toast.error(error.response?.data?.message || "Error removing member");
     } finally {
       setLoadingAction(null);
     }
@@ -75,25 +75,25 @@ export default function GroupInfoSidebar({ onClose }) {
     setLoadingAction(memberId);
     try {
       await addAdmin(selectedGroup._id, memberId);
-      toast.success(`Đã chỉ định ${memberName} làm admin`);
+      toast.success(`Assigned ${memberName} as admin`);
       setOpenMemberMenu(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi chỉ định admin");
+      toast.error(error.response?.data?.message || "Error assigning admin");
     } finally {
       setLoadingAction(null);
     }
   };
 
   const handleRemoveAdmin = async (memberId, memberName) => {
-    if (!confirm(`Bạn có chắc muốn gỡ quyền admin của ${memberName}?`)) return;
+    if (!confirm(`Are you sure you want to remove admin rights from ${memberName}?`)) return;
 
     setLoadingAction(memberId);
     try {
       await removeAdmin(selectedGroup._id, memberId);
-      toast.success(`Đã gỡ quyền admin của ${memberName}`);
+      toast.success(`Removed admin rights from ${memberName}`);
       setOpenMemberMenu(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi gỡ quyền admin");
+      toast.error(error.response?.data?.message || "Error removing admin rights");
     } finally {
       setLoadingAction(null);
     }
@@ -113,7 +113,7 @@ export default function GroupInfoSidebar({ onClose }) {
       <div className="flex flex-col h-full bg-white">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-semibold text-gray-800">Thông tin nhóm</h2>
+          <h2 className="font-semibold text-gray-800">Group Info</h2>
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
@@ -141,7 +141,7 @@ export default function GroupInfoSidebar({ onClose }) {
               {selectedGroup.name}
             </h3>
             <p className="text-sm text-gray-500 mt-1">
-              {selectedGroup.members?.length || 0} thành viên
+              {selectedGroup.members?.length || 0} members
             </p>
           </div>
 
@@ -150,7 +150,7 @@ export default function GroupInfoSidebar({ onClose }) {
             <div className="px-4 py-3 border-b">
               <div className="flex items-center gap-2 text-gray-500 mb-2">
                 <FileText size={16} />
-                <span className="text-sm font-medium">Mô tả</span>
+                <span className="text-sm font-medium">Description</span>
               </div>
               <p className="text-sm text-gray-700">{selectedGroup.description}</p>
             </div>
@@ -164,14 +164,14 @@ export default function GroupInfoSidebar({ onClose }) {
                 className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
               >
                 <Settings size={18} className="text-purple-500" />
-                <span className="text-sm font-medium text-gray-700">Chỉnh sửa nhóm</span>
+                <span className="text-sm font-medium text-gray-700">Edit Group</span>
               </button>
               <button
                 onClick={() => setShowAddMemberModal(true)}
                 className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
               >
                 <UserPlus size={18} className="text-green-500" />
-                <span className="text-sm font-medium text-gray-700">Thêm thành viên</span>
+                <span className="text-sm font-medium text-gray-700">Add Member</span>
               </button>
             </div>
           )}
@@ -181,7 +181,7 @@ export default function GroupInfoSidebar({ onClose }) {
             <div className="flex items-center gap-2 text-gray-500">
               <Calendar size={16} />
               <span className="text-sm">
-                Ngày tạo: {formatDate(selectedGroup.createdAt)}
+                Created: {formatDate(selectedGroup.createdAt)}
               </span>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function GroupInfoSidebar({ onClose }) {
             <div className="flex items-center gap-2 text-gray-500 mb-3">
               <Users size={16} />
               <span className="text-sm font-medium">
-                Thành viên ({selectedGroup.members?.length || 0})
+                Members ({selectedGroup.members?.length || 0})
               </span>
             </div>
 
@@ -218,9 +218,8 @@ export default function GroupInfoSidebar({ onClose }) {
                 return (
                   <div
                     key={memberId}
-                    className={`flex items-center gap-3 p-2 rounded-lg ${
-                      isCurrentUser ? "bg-purple-50" : "hover:bg-gray-50"
-                    } relative`}
+                    className={`flex items-center gap-3 p-2 rounded-lg ${isCurrentUser ? "bg-purple-50" : "hover:bg-gray-50"
+                      } relative`}
                   >
                     <div className="relative">
                       <img
@@ -237,7 +236,7 @@ export default function GroupInfoSidebar({ onClose }) {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-800 truncate">
                           {memberName}
-                          {isCurrentUser && " (Bạn)"}
+                          {isCurrentUser && " (You)"}
                         </span>
                         {isMemberCreator && (
                           <Crown size={14} className="text-yellow-500" />
@@ -266,7 +265,7 @@ export default function GroupInfoSidebar({ onClose }) {
                         >
                           <MoreVertical size={16} className="text-gray-500" />
                         </button>
-                        
+
                         {openMemberMenu === memberId && (
                           <div className="absolute right-0 top-8 bg-white border rounded-lg shadow-lg py-1 z-10 min-w-[160px]">
                             {isMemberAdmin ? (
@@ -276,7 +275,7 @@ export default function GroupInfoSidebar({ onClose }) {
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 disabled:opacity-50"
                               >
                                 <ShieldOff size={14} />
-                                Gỡ quyền admin
+                                Remove Admin
                               </button>
                             ) : (
                               <button
@@ -285,7 +284,7 @@ export default function GroupInfoSidebar({ onClose }) {
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 disabled:opacity-50"
                               >
                                 <Shield size={14} />
-                                Chỉ định admin
+                                Assign Admin
                               </button>
                             )}
                             <button
@@ -294,7 +293,7 @@ export default function GroupInfoSidebar({ onClose }) {
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                             >
                               <UserMinus size={14} />
-                              Xóa khỏi nhóm
+                              Remove from Group
                             </button>
                           </div>
                         )}
@@ -315,7 +314,7 @@ export default function GroupInfoSidebar({ onClose }) {
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium disabled:opacity-50"
           >
             <LogOut size={18} />
-            {isLeaving ? "Đang rời..." : "Rời khỏi nhóm"}
+            {isLeaving ? "Leaving..." : "Leave Group"}
           </button>
         </div>
       </div>

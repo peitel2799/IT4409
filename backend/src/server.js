@@ -8,6 +8,7 @@ import messageRoutes from "./routes/message.route.js";
 import friendRoutes from "./routes/friend.route.js";
 import callRoutes from "./routes/call.route.js";
 import groupRoutes from "./routes/group.route.js";
+import blockRoutes from "./routes/block.route.js";
 import { connectDB } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
 import { app, server } from "./lib/socket.js";
@@ -30,6 +31,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/calls", callRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/block", blockRoutes);
 
 // make ready for deployment
 if (ENV.NODE_ENV === "production") {

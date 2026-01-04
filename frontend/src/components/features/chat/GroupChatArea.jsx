@@ -93,7 +93,7 @@ export default function GroupChatArea({
       <div className="flex-1 w-full flex items-center justify-center bg-gray-50">
         <div className="text-center text-gray-500">
           <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <p>Chọn một nhóm để bắt đầu trò chuyện</p>
+          <p>Select a group to start chatting</p>
         </div>
       </div>
     );
@@ -103,7 +103,7 @@ export default function GroupChatArea({
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Ảnh phải nhỏ hơn 5MB");
+        toast.error("Image must be less than 5MB");
         return;
       }
       setImage(file);
@@ -129,22 +129,22 @@ export default function GroupChatArea({
       setText("");
       removeImage();
     } catch (error) {
-      toast.error("Lỗi khi gửi tin nhắn");
+      toast.error("Error sending message");
     } finally {
       setIsSending(false);
     }
   };
 
   const handleLeaveGroup = async () => {
-    if (!confirm("Bạn có chắc muốn rời khỏi nhóm này?")) return;
+    if (!confirm("Are you sure you want to leave this group?")) return;
 
     setIsLeaving(true);
     try {
       await leaveGroup(selectedGroup._id);
-      toast.success("Đã rời khỏi nhóm");
+      toast.success("Left group");
       onBack?.();
     } catch (error) {
-      toast.error("Lỗi khi rời nhóm");
+      toast.error("Error leaving group");
     } finally {
       setIsLeaving(false);
     }
@@ -175,18 +175,17 @@ export default function GroupChatArea({
             {selectedGroup.name}
           </h2>
           <p className="text-xs text-gray-500">
-            {selectedGroup.members?.length || 0} thành viên
+            {selectedGroup.members?.length || 0} members
           </p>
         </div>
 
         <button
           onClick={onToggleInfoSidebar}
-          className={`p-2 rounded-full transition-colors ${
-            isInfoSidebarOpen
+          className={`p-2 rounded-full transition-colors ${isInfoSidebarOpen
               ? "bg-purple-100 text-purple-600"
               : "text-gray-500 hover:bg-gray-100"
-          }`}
-          title="Thông tin nhóm"
+            }`}
+          title="Group info"
         >
           <Info className="w-5 h-5" />
         </button>
@@ -200,12 +199,12 @@ export default function GroupChatArea({
           </div>
         ) : groupMessages.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            <p>Chưa có tin nhắn nào</p>
-            <p className="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
+            <p>No messages yet</p>
+            <p className="text-sm">Start the conversation!</p>
           </div>
         ) : (
           groupMessages.map((message) => {
-            const senderId = message.senderId?._id || message.senderId; 
+            const senderId = message.senderId?._id || message.senderId;
             const isOwn = String(senderId) === String(authUser?._id);
             const senderName = message.senderId.fullName || message.senderId.email || "Unknown";
             const senderAvatar =
@@ -227,9 +226,8 @@ export default function GroupChatArea({
             return (
               <div
                 key={message._id}
-                className={`flex gap-2 group relative ${
-                  isOwn ? "flex-row-reverse" : ""
-                }`}
+                className={`flex gap-2 group relative ${isOwn ? "flex-row-reverse" : ""
+                  }`}
               >
                 {!isOwn && (
                   <img
@@ -239,9 +237,8 @@ export default function GroupChatArea({
                   />
                 )}
                 <div
-                  className={`max-w-[70%] relative ${
-                    isOwn ? "items-end" : "items-start"
-                  }`}
+                  className={`max-w-[70%] relative ${isOwn ? "items-end" : "items-start"
+                    }`}
                 >
                   {!isOwn && (
                     <p className="text-xs text-gray-500 mb-1 ml-1">
@@ -252,11 +249,10 @@ export default function GroupChatArea({
                   {/* Reactions Badge */}
                   {hasReactions && (
                     <div
-                      className={`absolute -top-2 ${
-                        isOwn
+                      className={`absolute -top-2 ${isOwn
                           ? "left-0 -translate-x-1/2"
                           : "right-0 translate-x-1/2"
-                      } z-10 flex gap-0.5 bg-white border border-gray-100 rounded-full px-1.5 py-0.5 shadow-sm`}
+                        } z-10 flex gap-0.5 bg-white border border-gray-100 rounded-full px-1.5 py-0.5 shadow-sm`}
                     >
                       {Object.entries(reactionCounts).map(([emoji, count]) => (
                         <div
@@ -275,11 +271,10 @@ export default function GroupChatArea({
                   )}
 
                   <div
-                    className={`px-3 py-2 rounded-2xl ${
-                      isOwn
+                    className={`px-3 py-2 rounded-2xl ${isOwn
                         ? "bg-purple-500 text-white rounded-br-md"
                         : "bg-white text-gray-800 rounded-bl-md shadow-sm"
-                    }`}
+                      }`}
                   >
                     {message.image && (
                       <img
@@ -295,9 +290,8 @@ export default function GroupChatArea({
                     )}
                   </div>
                   <p
-                    className={`text-[10px] text-gray-400 mt-1 ${
-                      isOwn ? "text-right mr-1" : "ml-1"
-                    }`}
+                    className={`text-[10px] text-gray-400 mt-1 ${isOwn ? "text-right mr-1" : "ml-1"
+                      }`}
                   >
                     {new Date(message.createdAt).toLocaleTimeString("vi-VN", {
                       hour: "2-digit",
@@ -308,13 +302,11 @@ export default function GroupChatArea({
 
                 {/* Reaction Button */}
                 <div
-                  className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center mb-1 ${
-                    isOwn ? "mr-1" : "ml-1"
-                  } ${
-                    activeReactionMessageId === message._id
+                  className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center mb-1 ${isOwn ? "mr-1" : "ml-1"
+                    } ${activeReactionMessageId === message._id
                       ? "!opacity-100"
                       : ""
-                  }`}
+                    }`}
                 >
                   <button
                     onClick={() =>
@@ -334,9 +326,8 @@ export default function GroupChatArea({
                 {activeReactionMessageId === message._id && (
                   <div
                     ref={reactionPickerRef}
-                    className={`absolute bottom-full mb-1 ${
-                      isOwn ? "right-10" : "left-10"
-                    } z-50`}
+                    className={`absolute bottom-full mb-1 ${isOwn ? "right-10" : "left-10"
+                      } z-50`}
                   >
                     <EmojiPicker
                       className="custom-emoji-picker"
@@ -399,7 +390,7 @@ export default function GroupChatArea({
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Nhập tin nhắn..."
+            placeholder="Type a message..."
             className="flex-1 px-4 py-2 bg-gray-100 rounded-full outline-none focus:ring-2 focus:ring-purple-500"
           />
 

@@ -30,11 +30,10 @@ export default function GroupItem({ group, isActive, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center p-3 cursor-pointer transition-all rounded-xl mx-2 mb-1 ${
-        isActive
+      className={`flex items-center p-3 cursor-pointer transition-all rounded-xl mx-2 mb-1 ${isActive
           ? "bg-purple-50 border border-purple-100"
           : "hover:bg-gray-50 border border-transparent"
-      }`}
+        }`}
     >
       <div className="relative">
         {group.avatar ? (
@@ -53,9 +52,8 @@ export default function GroupItem({ group, isActive, onClick }) {
       <div className="flex-1 min-w-0 ml-3">
         <div className="flex justify-between items-baseline">
           <p
-            className={`font-semibold text-sm truncate ${
-              isActive ? "text-purple-700" : "text-gray-800"
-            }`}
+            className={`font-semibold text-sm truncate ${isActive ? "text-purple-700" : "text-gray-800"
+              }`}
           >
             {group.name}
           </p>
@@ -65,11 +63,10 @@ export default function GroupItem({ group, isActive, onClick }) {
         </div>
         <div className="flex justify-between items-center mt-0.5">
           <p
-            className={`text-xs truncate max-w-[140px] ${
-              isActive ? "text-purple-400 font-medium" : "text-gray-500"
-            }`}
+            className={`text-xs truncate max-w-[140px] ${isActive ? "text-purple-400 font-medium" : "text-gray-500"
+              }`}
           >
-            {memberCount} thành viên
+            {memberCount} members
           </p>
         </div>
       </div>

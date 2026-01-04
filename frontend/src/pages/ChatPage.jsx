@@ -5,7 +5,8 @@ import { FriendProvider } from "../context/FriendContext";
 import { ChatProvider } from "../context/ChatContext";
 import { CallProvider } from "../context/CallContext";
 import { GroupProvider } from "../context/GroupContext";
-import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import { BlockProvider } from "../context/BlockContext";
+import { useNavigate, Outlet } from "react-router-dom";
 import { LoaderIcon } from "lucide-react";
 import NavigationSidebar from "../components/features/NavigationSidebar";
 import IncomingCallModal from "../components/IncomingCallModal";
@@ -47,18 +48,19 @@ export default function ChatPage() {
     );
   }
 
-  // Wrap with all providers in proper order:
-  // SocketProvider -> FriendProvider -> ChatProvider -> GroupProvider -> CallProvider
+  // Wrap with all providers in proper order
   return (
     <SocketProvider>
       <FriendProvider>
-        <ChatProvider>
-          <GroupProvider>
-            <CallProvider>
-              <ChatPageContent />
-            </CallProvider>
-          </GroupProvider>
-        </ChatProvider>
+        <BlockProvider>
+          <ChatProvider>
+            <GroupProvider>
+              <CallProvider>
+                <ChatPageContent />
+              </CallProvider>
+            </GroupProvider>
+          </ChatProvider>
+        </BlockProvider>
       </FriendProvider>
     </SocketProvider>
   );
