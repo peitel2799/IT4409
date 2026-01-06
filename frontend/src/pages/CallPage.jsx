@@ -14,8 +14,8 @@ export default function CallPage() {
   const isReceiver = searchParams.get("receiver") === "true";
   const isCaller = searchParams.get("caller") === "true";
   const callIdParam = searchParams.get("callId");
-  
-  const [isNoAnswer, setIsNoAnswer] = useState(false); 
+
+  const [isNoAnswer, setIsNoAnswer] = useState(false);
 
   const { authUser, isCheckingAuth } = useAuth();
   const { isConnected } = useSocket();
@@ -34,18 +34,19 @@ export default function CallPage() {
   const [isCamOn, setIsCamOn] = useState(isVideoCall);
   const [isSwapped, setIsSwapped] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const durationIntervalRef = useRef(null);
   const initializedRef = useRef(false);
+  const noAnswerTimeoutRef = useRef(null);
 
   // Âm thanh cuộc gọi
-  const outgoingSoundRef = useRef(new Audio("/amthanhcuocgoiden.mp3")); 
-  const busySoundRef = useRef(new Audio("/amthanhcuocgoinho.mp3")); 
+  const outgoingSoundRef = useRef(new Audio("/amthanhcuocgoiden.mp3"));
+  const busySoundRef = useRef(new Audio("/amthanhcuocgoinho.mp3"));
 
-  
-  useEffect(() => { 
+
+  useEffect(() => {
     const ringback = outgoingSoundRef.current;
     ringback.loop = true;
     if (callState.callStatus === "ringing" && isCaller) {
@@ -78,16 +79,16 @@ export default function CallPage() {
         await acceptCall(callIdParam, recipientId, { id: recipientId, name, avatar }, isVideoCall);
       } else if (isCaller) {
         await initiateCall(recipientId, { id: recipientId, name, avatar }, isVideoCall);
-        
-        setTimeout(() => {
-          if (callState.callStatus !== "connected") {
-            setIsNoAnswer(true);
-            setTimeout(() => handleEndCall(), 5000);
-          }
+
+        // Set timeout for no answer - using ref to avoid stale closure
+        noAnswerTimeoutRef.current = setTimeout(() => {
+          setIsNoAnswer(true);
+          setTimeout(() => handleEndCall(), 5000);
         }, 30000);
       }
     };
     start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, authUser]);
 
   useEffect(() => {
@@ -99,10 +100,29 @@ export default function CallPage() {
   }, [remoteStream]);
 
   useEffect(() => {
+    // Clear timeout when call connects
+    if (callState.callStatus === "connected" && noAnswerTimeoutRef.current) {
+      clearTimeout(noAnswerTimeoutRef.current);
+      noAnswerTimeoutRef.current = null;
+    }
+
+    // Clear any existing interval first to prevent memory leak
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+
+    // Start duration counter when connected
     if (callState.callStatus === "connected") {
       durationIntervalRef.current = setInterval(() => setCallDuration(p => p + 1), 1000);
     }
-    return () => clearInterval(durationIntervalRef.current);
+
+    return () => {
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = null;
+      }
+    };
   }, [callState.callStatus]);
 
   useEffect(() => {
@@ -111,9 +131,47 @@ export default function CallPage() {
     }
   }, [callState.callStatus, isNoAnswer]);
 
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      // End call and cleanup when window/component unmounts
+      if (callState.isInCall || callState.callId) {
+        endCall(recipientId || callState.remoteUser?.id, callState.callId || callIdParam);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleEndCall = () => {
+    // Clear any pending timeouts
+    if (noAnswerTimeoutRef.current) {
+      clearTimeout(noAnswerTimeoutRef.current);
+      noAnswerTimeoutRef.current = null;
+    }
     endCall(recipientId || callState.remoteUser?.id, callState.callId || callIdParam);
     window.close();
+  };
+
+  // Toggle microphone on/off
+  const toggleMic = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMicOn(audioTrack.enabled);
+      }
+    }
+  };
+
+  // Toggle camera on/off
+  const toggleCamera = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsCamOn(videoTrack.enabled);
+      }
+    }
   };
 
   const formatDuration = (s) => {
@@ -132,7 +190,7 @@ export default function CallPage() {
 
   return (
     <div className="h-screen w-screen bg-gray-900 flex items-center justify-center text-white relative overflow-hidden">
-      
+
       {/* --- Remote Video (Người bên kia) --- */}
       <div className={isSwapped ? "absolute top-4 right-4 w-48 h-36 z-20 border rounded-xl overflow-hidden shadow-2xl" : "absolute inset-0 w-full h-full z-0"} onClick={() => isSwapped && setIsSwapped(false)}>
         <video ref={remoteVideoRef} autoPlay playsInline className={`w-full h-full object-cover ${!remoteStream ? "hidden" : ""}`} />
@@ -179,11 +237,11 @@ export default function CallPage() {
 
       {/* Control Bar */}
       <div className="absolute bottom-8 flex gap-4 bg-gray-900/80 p-4 rounded-full border border-gray-700 z-40 backdrop-blur-md">
-        <button onClick={() => setIsMicOn(!isMicOn)} className={`p-4 rounded-full transition-all ${isMicOn ? "bg-gray-700 hover:bg-gray-600" : "bg-red-500 hover:bg-red-600"}`}>
+        <button onClick={toggleMic} className={`p-4 rounded-full transition-all ${isMicOn ? "bg-gray-700 hover:bg-gray-600" : "bg-red-500 hover:bg-red-600"}`}>
           {isMicOn ? <Mic size={24} /> : <MicOff size={24} />}
         </button>
         {isVideoCall && (
-          <button onClick={() => setIsCamOn(!isCamOn)} className={`p-4 rounded-full transition-all ${isCamOn ? "bg-gray-700 hover:bg-gray-600" : "bg-red-500 hover:bg-red-600"}`}>
+          <button onClick={toggleCamera} className={`p-4 rounded-full transition-all ${isCamOn ? "bg-gray-700 hover:bg-gray-600" : "bg-red-500 hover:bg-red-600"}`}>
             {isCamOn ? <Video size={24} /> : <VideoOff size={24} />}
           </button>
         )}
@@ -194,7 +252,7 @@ export default function CallPage() {
           <ArrowLeftRight size={24} />
         </button>
       </div>
-      
+
       {callState.callStatus === "connected" && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-black/50 px-6 py-2 rounded-full font-mono text-xl z-30 border border-white/10">
           {formatDuration(callDuration)}

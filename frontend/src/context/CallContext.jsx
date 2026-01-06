@@ -68,8 +68,16 @@ export const CallProvider = ({ children }) => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: isVideo ? { facingMode: "user" } : false,
-        audio: { echoCancellation: true, noiseSuppression: true },
+        video: isVideo ? {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
       });
       setLocalStream(stream);
       setHasVideo(isVideo);
@@ -77,6 +85,34 @@ export const CallProvider = ({ children }) => {
       return stream;
     } catch (error) {
       console.error("Error getting media:", error);
+
+      // Handle different error types with user-friendly messages
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        alert('Camera/Microphone permission denied. Please enable permissions in your browser settings and try again.');
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        alert('No camera or microphone found on this device. Please connect a camera/microphone and try again.');
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        alert('Camera or microphone is already in use by another application. Please close other apps using your camera/mic.');
+      } else if (error.name === 'OverconstrainedError') {
+        alert('Camera does not support the requested video quality. Trying with lower quality...');
+        // Fallback: try again with lower constraints
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: isVideo ? { facingMode: "user" } : false,
+            audio: { echoCancellation: true, noiseSuppression: true },
+          });
+          setLocalStream(fallbackStream);
+          setHasVideo(isVideo);
+          localStreamRef.current = fallbackStream;
+          return fallbackStream;
+        } catch (fallbackError) {
+          console.error("Fallback getUserMedia failed:", fallbackError);
+          alert('Unable to access camera/microphone. Please check your device settings.');
+        }
+      } else {
+        alert(`Unable to access camera/microphone: ${error.message}`);
+      }
+
       return null;
     }
   }, []);
