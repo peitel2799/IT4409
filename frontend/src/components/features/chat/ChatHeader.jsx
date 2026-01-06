@@ -1,5 +1,5 @@
 import { ChevronLeft, Cloud, Phone, Search, Sidebar, Video, MoreVertical, ShieldAlert, ShieldOff } from "lucide-react";
-import { OpenCallWindow } from "../../../../utils/window";
+import { OpenCallWindow } from "../../../utils/window";
 import { useAuth } from "../../../context/AuthContext";
 import { useChat } from "../../../context/ChatContext";
 import { useFriend } from "../../../context/FriendContext";

@@ -4,7 +4,7 @@ import { axiosInstance } from "../../../lib/axios";
 import { useChat } from "../../../context/ChatContext";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
-import { OpenCallWindow } from '../../../../utils/window'; 
+import { OpenCallWindow } from '../../../utils/window';
 import CallsHeader from "./CallsHeader";
 import CallsList from "./CallsList";
 
@@ -34,35 +34,35 @@ export default function CallsDashboard() {
     }
   }, []);
 
-    useEffect(() => {
-        //Lấy dữ liệu lần đầu khi vào trang
-        fetchCallHistory();
+  useEffect(() => {
+    //Lấy dữ liệu lần đầu khi vào trang
+    fetchCallHistory();
 
-        //Lắng nghe sự kiện từ socket để cập nhật lại danh sách
-        if (socket) {
-          const handleRefreshHistory = () => {
-            console.log("Call ended, refreshing history...");
-            fetchCallHistory(); // Gọi lại hàm lấy dữ liệu từ API
-          };
+    //Lắng nghe sự kiện từ socket để cập nhật lại danh sách
+    if (socket) {
+      const handleRefreshHistory = () => {
+        console.log("Call ended, refreshing history...");
+        fetchCallHistory(); // Gọi lại hàm lấy dữ liệu từ API
+      };
 
-          //Lắng nghe khi cuộc gọi kết thúc hoặc bị từ chối
-          socket.on("call:ended", handleRefreshHistory);
-          socket.on("call:rejected", handleRefreshHistory);
-          socket.on("call:busy", handleRefreshHistory);
+      //Lắng nghe khi cuộc gọi kết thúc hoặc bị từ chối
+      socket.on("call:ended", handleRefreshHistory);
+      socket.on("call:rejected", handleRefreshHistory);
+      socket.on("call:busy", handleRefreshHistory);
 
-          // Cleanup function để tránh rò rỉ bộ nhớ khi component bị unmount
-          return () => {
-            socket.off("call:ended", handleRefreshHistory);
-            socket.off("call:rejected", handleRefreshHistory);
-            socket.off("call:busy", handleRefreshHistory);
-          };
-        }
-      }, [fetchCallHistory, socket]);
+      // Cleanup function để tránh rò rỉ bộ nhớ khi component bị unmount
+      return () => {
+        socket.off("call:ended", handleRefreshHistory);
+        socket.off("call:rejected", handleRefreshHistory);
+        socket.off("call:busy", handleRefreshHistory);
+      };
+    }
+  }, [fetchCallHistory, socket]);
 
   // Filter calls
   const filteredCalls = calls.filter(call => {
     const matchesSearch = call.contact?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || call.contact?.email?.toLowerCase().includes(searchQuery.toLowerCase());;
-    
+
     let matchesFilter = true;
     if (filter === "missed") {
       matchesFilter = call.status === "missed" || call.status === "rejected" || call.status === "busy" || call.status === "unavailable";
@@ -71,7 +71,7 @@ export default function CallsDashboard() {
     } else if (filter === "outgoing") {
       matchesFilter = call.direction === "outgoing" && call.status === "answered";
     }
-    
+
     return matchesSearch && matchesFilter;
   });
 
@@ -81,32 +81,32 @@ export default function CallsDashboard() {
   };
 
   const openCallWindow = (contact, isVideo) => {
-      const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName)}&background=random`;
+    const avatarUrl = contact.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.fullName)}&background=random`;
 
-      const params = {
-        name: contact.fullName,
-        avatar: avatarUrl,
-        id: contact._id,
-        video: isVideo ? "true" : "false",
-        caller: "true"
-      };
- 
-    OpenCallWindow(params); 
+    const params = {
+      name: contact.fullName,
+      avatar: avatarUrl,
+      id: contact._id,
+      video: isVideo ? "true" : "false",
+      caller: "true"
+    };
+
+    OpenCallWindow(params);
   };
 
   return (
     <div className="flex flex-col h-full">
-      <CallsHeader 
-        filter={filter} 
-        setFilter={setFilter} 
-        searchQuery={searchQuery} 
-        setSearchQuery={setSearchQuery} 
+      <CallsHeader
+        filter={filter}
+        setFilter={setFilter}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
       <div className="flex-1 overflow-y-auto px-4 md:px-6">
-        <CallsList 
+        <CallsList
           calls={filteredCalls}
           loading={loading}
-          onMessage={handleMessage} 
+          onMessage={handleMessage}
           onCall={(call) => openCallWindow(call.contact, false)}
           onVideo={(call) => openCallWindow(call.contact, true)}
         />

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Phone, PhoneOff, Video, X } from "lucide-react";
 import { useCall } from "../context/CallContext";
-import { OpenCallWindow } from "../../utils/window";
+import { OpenCallWindow } from "../utils/window";
 
 export default function IncomingCallModal() {
   const { incomingCall, rejectCall, setIncomingCall } = useCall();
@@ -52,8 +52,8 @@ export default function IncomingCallModal() {
     OpenCallWindow(params);
   };
 
-    const handleReject = () => {
-      if (ringtoneRef.current) {
+  const handleReject = () => {
+    if (ringtoneRef.current) {
       ringtoneRef.current.pause();
     }
     rejectCall(callId, callerId);
