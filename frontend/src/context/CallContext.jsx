@@ -277,6 +277,7 @@ export const CallProvider = ({ children }) => {
       localStreamRef.current = null;
       setLocalStream(null);
       setRemoteStream(null);
+      setIncomingCall(null); // Clear incoming call modal
       setCallState({
         isInCall: false,
         isRinging: false,
@@ -362,13 +363,18 @@ export const CallProvider = ({ children }) => {
         new RTCIceCandidate(candidate)
       );
     });
-    socket.on("call:rejected", () =>
-      setCallState((p) => ({ ...p, callStatus: "rejected" }))
-    );
-    socket.on("call:busy", () =>
-      setCallState((p) => ({ ...p, callStatus: "busy" }))
-    );
-    socket.on("call:ended", () => endCall());
+    socket.on("call:rejected", () => {
+      setCallState((p) => ({ ...p, callStatus: "rejected" }));
+      setIncomingCall(null); // Clear incoming call modal
+    });
+    socket.on("call:busy", () => {
+      setCallState((p) => ({ ...p, callStatus: "busy" }));
+      setIncomingCall(null); // Clear incoming call modal
+    });
+    socket.on("call:ended", () => {
+      endCall();
+      setIncomingCall(null); // Clear incoming call modal when caller cancels
+    });
 
     return () => {
       socket.off("call:incoming");
