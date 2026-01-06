@@ -34,8 +34,17 @@ export default function ConversationSidebar({
     getHomeStats();
   }, [getHomeStats]);
 
-  // Auto-switch to "all" filter when unblocking/unspamming  
+  // Auto-switch filter when blocking/unblocking users
   useEffect(() => {
+    // Check if blocked or spammed counts increased (someone was blocked/spammed)
+    if (prevBlockedCount.current < blockedUsers.length || prevSpammedCount.current < spammedUsers.length) {
+      // Someone was blocked or spammed, switch to "unread" filter to show them
+      if (filter === "all") {
+        setFilter("unread");
+      }
+    }
+
+    // Check if blocked or spammed counts decreased (someone was unblocked/unspammed)
     if (prevBlockedCount.current > blockedUsers.length || prevSpammedCount.current > spammedUsers.length) {
       // Someone was unblocked or unspammed, switch to "all" filter
       if (filter === "unread") {
