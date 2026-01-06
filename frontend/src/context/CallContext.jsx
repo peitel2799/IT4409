@@ -14,11 +14,25 @@ const CallContext = createContext();
 // STUN/TURN servers for NAT traversal
 const ICE_SERVERS = {
   iceServers: [
+    // STUN servers (for NAT discovery)
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
     { urls: "stun:stun4.l.google.com:19302" },
+
+    // TURN servers (relay for difficult NAT scenarios)
+    // Free public TURN servers - replace with your own for production!
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
 };
 
