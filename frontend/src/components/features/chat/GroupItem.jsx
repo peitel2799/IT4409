@@ -31,8 +31,8 @@ export default function GroupItem({ group, isActive, onClick }) {
     <div
       onClick={onClick}
       className={`flex items-center p-3 cursor-pointer transition-all rounded-xl mx-2 mb-1 ${isActive
-          ? "bg-purple-50 border border-purple-100"
-          : "hover:bg-gray-50 border border-transparent"
+        ? "bg-purple-50 border border-purple-100"
+        : "hover:bg-gray-50 border border-transparent"
         }`}
     >
       <div className="relative">
@@ -68,6 +68,11 @@ export default function GroupItem({ group, isActive, onClick }) {
           >
             {memberCount} members
           </p>
+          {group.unreadCount > 0 && (
+            <span className="flex items-center justify-center text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 bg-purple-500">
+              {group.unreadCount}
+            </span>
+          )}
         </div>
       </div>
     </div>

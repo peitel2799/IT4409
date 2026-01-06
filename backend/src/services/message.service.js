@@ -37,9 +37,14 @@ export const sendMessageService = async (senderId, receiverId, text, imageUrl, a
         throw new AppError("Text, image or audio is required", 400);
     }
 
-    const receiverExists = await User.exists({ _id: receiverId });
-    if (!receiverExists) {
+    const receiver = await User.findById(receiverId);
+    if (!receiver) {
         throw new AppError("Receiver not found", 404);
+    }
+
+    // Check if receiver has blocked the sender
+    if (receiver.blockedUsers && receiver.blockedUsers.includes(senderId)) {
+        throw new AppError("You cannot send messages to this user", 403);
     }
 
     const newMessage = new Message({
@@ -266,6 +271,19 @@ export const getGroupMessagesService = async (groupId, userId) => {
     const messages = await Message.find({ groupId })
         .populate("senderId", "fullName profilePic email")
         .sort({ createdAt: 1 });
+
+
+    // Mark all messages in this group as read by this user
+    await Message.updateMany(
+        {
+            groupId,
+            senderId: { $ne: userId },
+            readBy: { $ne: userId }
+        },
+        {
+            $addToSet: { readBy: userId }
+        }
+    );
 
     return messages;
 };

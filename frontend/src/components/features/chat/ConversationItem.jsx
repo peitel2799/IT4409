@@ -17,10 +17,10 @@ export default function ConversationItem({ chat, isActive, onClick }) {
     <div
       onClick={onClick}
       className={`flex items-center p-3 cursor-pointer transition-all rounded-xl mx-2 mb-1 ${isActive
-          ? isSelfChat
-            ? "bg-blue-50 border border-blue-100"
-            : "bg-pink-50 border border-pink-100"
-          : "hover:bg-gray-50 border border-transparent"
+        ? isSelfChat
+          ? "bg-blue-50 border border-blue-100"
+          : "bg-pink-50 border border-pink-100"
+        : "hover:bg-gray-50 border border-transparent"
         }`}
     >
       <div className="relative">
@@ -29,10 +29,10 @@ export default function ConversationItem({ chat, isActive, onClick }) {
             <Cloud size={24} className="text-white" />
           </div>
         ) : (
-          <img 
-            src={avatarUrl} 
-            alt={chat.fullName} 
-            className="w-12 h-12 rounded-full object-cover border border-gray-100" 
+          <img
+            src={avatarUrl}
+            alt={chat.fullName}
+            className="w-12 h-12 rounded-full object-cover border border-gray-100"
           />
         )}
         {isOnline && !isSelfChat && (
@@ -43,17 +43,17 @@ export default function ConversationItem({ chat, isActive, onClick }) {
       <div className="flex-1 min-w-0 ml-3">
         <div className="flex justify-between items-baseline">
           <p className={`font-semibold text-sm truncate ${isActive
-              ? isSelfChat ? "text-blue-700" : "text-pink-700"
-              : "text-gray-800"
+            ? isSelfChat ? "text-blue-700" : "text-pink-700"
+            : "text-gray-800"
             }`}>
-            {chat.fullName}
+            {isSelfChat ? "Cloud" : chat.fullName}
           </p>
           <span className="text-[10px] text-gray-400">{chat.lastMessageTimeFormatted}</span>
         </div>
         <div className="flex justify-between items-center mt-0.5">
           <p className={`text-xs truncate max-w-[140px] ${isActive
-              ? isSelfChat ? "text-blue-400 font-medium" : "text-pink-400 font-medium"
-              : "text-gray-500"
+            ? isSelfChat ? "text-blue-400 font-medium" : "text-pink-400 font-medium"
+            : "text-gray-500"
             }`}>
             {isSelfChat ? (chat.lastMessage || "Save notes & files here") : chat.lastMessage}
           </p>

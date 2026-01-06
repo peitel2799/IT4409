@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
         ref: "User",
         default: [],
     }],
+    spammedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+    }],
 },
     { timestamps: true }
 );

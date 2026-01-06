@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Plus, Users, UserPlus } from "lucide-react";
 import { useChat } from "../../../context/ChatContext";
 import { useGroup } from "../../../context/GroupContext";
@@ -24,13 +24,29 @@ export default function ConversationSidebar({
   const { homeStats, getHomeStats, setSelectedUser } = useChat();
   const { groups, isLoadingGroups } = useGroup();
   const { friends } = useFriend();
-  const { blockedUsers } = useBlock();
+  const { blockedUsers, spammedUsers } = useBlock();
 
   const chats = homeStats?.chats || [];
+  const prevBlockedCount = useRef(blockedUsers.length);
+  const prevSpammedCount = useRef(spammedUsers.length);
 
   useEffect(() => {
     getHomeStats();
   }, [getHomeStats]);
+
+  // Auto-switch to "all" filter when unblocking/unspamming  
+  useEffect(() => {
+    if (prevBlockedCount.current > blockedUsers.length || prevSpammedCount.current > spammedUsers.length) {
+      // Someone was unblocked or unspammed, switch to "all" filter
+      if (filter === "unread") {
+        setFilter("all");
+      }
+    }
+
+    prevBlockedCount.current = blockedUsers.length;
+    prevSpammedCount.current = spammedUsers.length;
+  }, [blockedUsers.length, spammedUsers.length, filter]);
+
 
   // Handle chat selection from search
   const handleSelectChat = useCallback(
@@ -65,7 +81,7 @@ export default function ConversationSidebar({
     [onHighlightMessage]
   );
 
-  // Separate chats based on filter, friend status, and block status
+  // Separate chats based on filter, friend status, and block/spam status
   const { allChats, messageRequests, spamChats } = useMemo(() => {
     const friendChats = [];
     const nonFriendChats = [];
@@ -75,12 +91,14 @@ export default function ConversationSidebar({
     chats.forEach((chat) => {
       const isFriend = friends.some(f => f._id === chat._id) || chat.isSelfChat;
       const isBlocked = blockedUsers.some(b => b._id === chat._id);
+      const isSpammed = spammedUsers.some(s => s._id === chat._id);
 
-      if (isBlocked) {
-        // Blocked users only show in unread filter as spam
+      // Blocked or spammed users only show in unread filter as spam
+      if (isBlocked || isSpammed) {
         if (filter === "unread" && chat.lastMessage) {
           spamChats.push(chat);
         }
+        // Don't add them to any other category - they're hidden from "all"
       } else if (isFriend) {
         friendChats.push(chat);
       } else if (chat.lastMessage) {
@@ -99,7 +117,7 @@ export default function ConversationSidebar({
     const allChats = [...friendChats, ...nonFriendChats];
 
     return { allChats, messageRequests, spamChats };
-  }, [chats, friends, blockedUsers, filter]);
+  }, [chats, friends, blockedUsers, spammedUsers, filter]);
 
   // Apply filters and search
   const filteredChats = allChats.filter((chat) => {

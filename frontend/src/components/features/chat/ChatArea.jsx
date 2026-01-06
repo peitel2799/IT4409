@@ -4,7 +4,7 @@ import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import MessageSearch from "./MessageSearch";
-import { MessageCircleMore, ShieldAlert, ShieldCheck } from "lucide-react";
+import { MessageCircleMore, ShieldAlert } from "lucide-react";
 import { useFriend } from "../../../context/FriendContext";
 import { useBlock } from "../../../context/BlockContext";
 
@@ -19,12 +19,13 @@ const ChatArea = forwardRef(function ChatArea({
   const [highlightMessageId, setHighlightMessageId] = useState(null);
   const messageListRef = useRef(null);
   const { friends, sendFriendRequest, sentRequests } = useFriend();
-  const { isUserBlocked, blockUser, unblockUser } = useBlock();
+  const { isUserBlocked, isUserSpammed } = useBlock();
 
   // Check friend status
   const isFriend = friends.some(f => f._id === chat?._id) || chat?.isSelfChat;
   const hasSentRequest = sentRequests && sentRequests.some(req => req._id === chat?._id);
   const isBlocked = isUserBlocked(chat?._id);
+  const isSpammed = isUserSpammed(chat?._id);
 
   // Toggle search panel
   const handleToggleSearch = useCallback(() => {
@@ -113,22 +114,6 @@ const ChatArea = forwardRef(function ChatArea({
     }
   };
 
-  // Handle block/unblock user
-  const handleBlockToggle = async () => {
-    if (!chat?._id || chat?.isSelfChat) return;
-    try {
-      if (isBlocked) {
-        await unblockUser(chat._id);
-        toast.success('User unblocked');
-      } else {
-        await blockUser(chat._id);
-        toast.success('User blocked as spam');
-      }
-    } catch (error) {
-      // Error is already handled in the context
-    }
-  };
-
   if (!chat) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full bg-[#FAFAFA]">
@@ -165,20 +150,26 @@ const ChatArea = forwardRef(function ChatArea({
           <div className="flex items-center justify-center gap-2">
             <ShieldAlert className="w-5 h-5 text-red-600" />
             <p className="text-sm text-red-800">
-              <span className="font-semibold">This user is blocked.</span> They are marked as spam.
+              <span className="font-semibold">This user is blocked.</span> They cannot send you messages.
             </p>
-            <button
-              onClick={handleBlockToggle}
-              className="ml-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              Unblock
-            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Spammed user warning */}
+      {!isBlocked && isSpammed && (
+        <div className="px-4 py-2.5 bg-gradient-to-r from-orange-50 to-yellow-50 border-y border-orange-200">
+          <div className="flex items-center justify-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-orange-600" />
+            <p className="text-sm text-orange-800">
+              <span className="font-semibold">This user is marked as spam.</span> Their messages appear in unread.
+            </p>
           </div>
         </div>
       )}
 
       {/* Non-friend notification banner */}
-      {!isFriend && !isBlocked && (
+      {!isFriend && !isBlocked && !isSpammed && (
         <div className="px-4 py-2.5 bg-gradient-to-r from-amber-50 to-orange-50 border-y border-amber-200">
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <p className="text-sm text-amber-800">
@@ -197,14 +188,6 @@ const ChatArea = forwardRef(function ChatArea({
                   Request Sent
                 </span>
               )}
-              <button
-                onClick={handleBlockToggle}
-                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-1"
-                title="Mark as spam"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                Block
-              </button>
             </div>
           </div>
         </div>

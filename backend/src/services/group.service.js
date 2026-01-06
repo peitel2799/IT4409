@@ -53,7 +53,30 @@ export const getGroupsByUserIdService = async (userId) => {
     .populate("createdBy", "fullName email profilePic")
     .sort({ updatedAt: -1 });
 
-  return groups;
+  // Import Message model to calculate unread counts
+  const Message = (await import("../models/Message.js")).default;
+
+  // Calculate unread count for each group
+  const groupsWithUnreadCount = await Promise.all(
+    groups.map(async (group) => {
+      // Count messages in this group where:
+      // 1. The message is a group message (groupId matches)
+      // 2. The message sender is not the current user
+      // 3. The current user is not in the readBy array
+      const unreadCount = await Message.countDocuments({
+        groupId: group._id,
+        senderId: { $ne: userId },
+        readBy: { $ne: userId },
+      });
+
+      return {
+        ...group.toObject(),
+        unreadCount,
+      };
+    })
+  );
+
+  return groupsWithUnreadCount;
 };
 
 /**

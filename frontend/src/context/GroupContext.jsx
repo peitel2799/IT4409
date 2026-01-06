@@ -302,6 +302,10 @@ export const GroupProvider = ({ children }) => {
       setSelectedGroup(group);
       if (group) {
         await fetchGroupMessages(group._id);
+        // Reset unread count for this group
+        setGroups((prev) =>
+          prev.map((g) => (g._id === group._id ? { ...g, unreadCount: 0 } : g))
+        );
         // Join socket room
         if (socket) {
           socket.emit("group:join", { groupId: group._id });
@@ -341,10 +345,17 @@ export const GroupProvider = ({ children }) => {
         setGroupMessages((prev) => [...prev, message]);
       }
 
-      // Update group's last activity
+      // Update group's last activity and unread count
       setGroups((prev) =>
         prev.map((g) =>
-          g._id === groupId ? { ...g, updatedAt: new Date().toISOString() } : g
+          g._id === groupId
+            ? {
+              ...g,
+              updatedAt: new Date().toISOString(),
+              // Increment unread count only if not viewing this group
+              unreadCount: selectedGroup?._id === groupId ? 0 : (g.unreadCount || 0) + 1
+            }
+            : g
         )
       );
     };

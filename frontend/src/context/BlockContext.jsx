@@ -22,6 +22,7 @@ export const useBlock = () => {
 export const BlockProvider = ({ children }) => {
     const { authUser } = useAuth();
     const [blockedUsers, setBlockedUsers] = useState([]);
+    const [spammedUsers, setSpammedUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Fetch blocked users
@@ -36,6 +37,18 @@ export const BlockProvider = ({ children }) => {
         }
     }, [authUser]);
 
+    // Fetch spammed users
+    const fetchSpammedUsers = useCallback(async () => {
+        if (!authUser) return;
+
+        try {
+            const response = await axiosInstance.get("/block/spam/list");
+            setSpammedUsers(response.data || []);
+        } catch (error) {
+            console.error("Error fetching spammed users:", error);
+        }
+    }, [authUser]);
+
     // Block a user
     const blockUser = useCallback(
         async (userId) => {
@@ -44,6 +57,7 @@ export const BlockProvider = ({ children }) => {
                 await axiosInstance.post(`/block/block/${userId}`);
                 toast.success("User blocked successfully");
                 await fetchBlockedUsers();
+                await fetchSpammedUsers(); // Refresh spam list too
             } catch (error) {
                 toast.error(
                     error.response?.data?.message || "Failed to block user"
@@ -53,7 +67,7 @@ export const BlockProvider = ({ children }) => {
                 setIsLoading(false);
             }
         },
-        [fetchBlockedUsers]
+        [fetchBlockedUsers, fetchSpammedUsers]
     );
 
     // Unblock a user
@@ -76,6 +90,47 @@ export const BlockProvider = ({ children }) => {
         [fetchBlockedUsers]
     );
 
+    // Spam a user
+    const spamUser = useCallback(
+        async (userId) => {
+            setIsLoading(true);
+            try {
+                await axiosInstance.post(`/block/spam/${userId}`);
+                toast.success("User marked as spam");
+                await fetchSpammedUsers();
+                await fetchBlockedUsers(); // Refresh block list too
+            } catch (error) {
+                toast.error(
+                    error.response?.data?.message || "Failed to mark user as spam"
+                );
+                throw error;
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [fetchSpammedUsers, fetchBlockedUsers]
+    );
+
+    // Unspam a user
+    const unspamUser = useCallback(
+        async (userId) => {
+            setIsLoading(true);
+            try {
+                await axiosInstance.post(`/block/unspam/${userId}`);
+                toast.success("User unmarked as spam");
+                await fetchSpammedUsers();
+            } catch (error) {
+                toast.error(
+                    error.response?.data?.message || "Failed to unmark user as spam"
+                );
+                throw error;
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [fetchSpammedUsers]
+    );
+
     // Check if a user is blocked
     const isUserBlocked = useCallback(
         (userId) => {
@@ -84,23 +139,50 @@ export const BlockProvider = ({ children }) => {
         [blockedUsers]
     );
 
-    // Fetch blocked users on mount
+    // Check if a user is spammed
+    const isUserSpammed = useCallback(
+        (userId) => {
+            return spammedUsers.some((spammed) => spammed._id === userId);
+        },
+        [spammedUsers]
+    );
+
+    // Check if you are blocked by another user
+    const checkIfBlockedBy = useCallback(async (otherUserId) => {
+        try {
+            const response = await axiosInstance.get(`/block/check/${otherUserId}`);
+            return response.data.isBlocked || false;
+        } catch (error) {
+            console.error("Error checking if blocked by user:", error);
+            return false;
+        }
+    }, []);
+
+    // Fetch blocked and spammed users on mount
     useEffect(() => {
         if (authUser) {
             fetchBlockedUsers();
+            fetchSpammedUsers();
         }
-    }, [authUser, fetchBlockedUsers]);
+    }, [authUser, fetchBlockedUsers, fetchSpammedUsers]);
 
     const value = {
         blockedUsers,
+        spammedUsers,
         isLoading,
         blockUser,
         unblockUser,
+        spamUser,
+        unspamUser,
         isUserBlocked,
+        isUserSpammed,
+        checkIfBlockedBy,
         fetchBlockedUsers,
+        fetchSpammedUsers,
     };
 
     return <BlockContext.Provider value={value}>{children}</BlockContext.Provider>;
 };
 
 export default BlockContext;
+

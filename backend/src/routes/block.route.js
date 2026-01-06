@@ -4,6 +4,10 @@ import {
     blockUser,
     unblockUser,
     getBlockedUsers,
+    spamUser,
+    unspamUser,
+    getSpammedUsers,
+    checkIfBlockedBy,
 } from "../controllers/block.controller.js";
 
 const router = express.Router();
@@ -20,4 +24,17 @@ router.post("/unblock/:userToUnblockId", unblockUser);
 // Get list of blocked users
 router.get("/list", getBlockedUsers);
 
+// Spam a user
+router.post("/spam/:userToSpamId", spamUser);
+
+// Unspam a user
+router.post("/unspam/:userToUnspamId", unspamUser);
+
+// Get list of spammed users
+router.get("/spam/list", getSpammedUsers);
+
+// Check if blocked by another user
+router.get("/check/:otherUserId", checkIfBlockedBy);
+
 export default router;
+
