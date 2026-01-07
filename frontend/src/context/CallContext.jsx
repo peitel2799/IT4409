@@ -11,53 +11,39 @@ import { useAuth } from "./AuthContext";
 
 const CallContext = createContext();
 
-// STUN/TURN servers for NAT traversal
-const ICE_SERVERS = {
-  iceServers: [
-    // STUN servers (for NAT discovery)
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
-    { urls: "stun:stun4.l.google.com:19302" },
+// Function to fetch ICE servers configuration from backend
+// This keeps credentials secure on the server side
+const fetchICEServers = async () => {
+  try {
+    const response = await fetch("/api/calls/turn-config");
+    const data = await response.json();
 
-    // TURN servers - Multiple providers for better reliability
-    // Provider 1: OpenRelay (Free)
-    {
-      urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:openrelay.metered.ca:443",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:openrelay.metered.ca:443?transport=tcp",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-
-    // Provider 2: Metered (Free tier)
-    {
-      urls: "turn:a.relay.metered.ca:80",
-      username: "87e89a13c60b75feb7ed",
-      credential: "mOYOjI8eTN3gbnCa",
-    },
-    {
-      urls: "turn:a.relay.metered.ca:443",
-      username: "87e89a13c60b75feb7ed",
-      credential: "mOYOjI8eTN3gbnCa",
-    },
-    {
-      urls: "turn:a.relay.metered.ca:443?transport=tcp",
-      username: "87e89a13c60b75feb7ed",
-      credential: "mOYOjI8eTN3gbnCa",
-    },
-  ],
-  // Enable ICE debugging
-  iceCandidatePoolSize: 10,
+    if (data.success) {
+      const provider = data.provider === "cloudflare" ? "Cloudflare" : "Free";
+      console.log(`[TURN] ${provider} TURN servers loaded`);
+      return {
+        iceServers: data.iceServers,
+        iceCandidatePoolSize: data.iceCandidatePoolSize,
+      };
+    } else {
+      throw new Error("Failed to fetch TURN config");
+    }
+  } catch (error) {
+    console.error("[TURN] Error fetching TURN config, using fallback:", error);
+    // Fallback configuration
+    return {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        {
+          urls: "turn:openrelay.metered.ca:80",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+      ],
+      iceCandidatePoolSize: 10,
+    };
+  }
 };
 
 export const CallProvider = ({ children }) => {
@@ -79,6 +65,9 @@ export const CallProvider = ({ children }) => {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
 
+  // ICE servers config
+  const [iceServers, setIceServers] = useState(null);
+
   // Refs
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -88,6 +77,11 @@ export const CallProvider = ({ children }) => {
   useEffect(() => {
     socketRef.current = socket;
   }, [socket]);
+
+  // Fetch ICE servers configuration on mount
+  useEffect(() => {
+    fetchICEServers().then(setIceServers);
+  }, []);
 
   // Incoming call info
   const [incomingCall, setIncomingCall] = useState(null);
@@ -160,11 +154,17 @@ export const CallProvider = ({ children }) => {
     (recipientId, callId) => {
       if (peerConnectionRef.current) return peerConnectionRef.current;
 
-      const pc = new RTCPeerConnection(ICE_SERVERS);
+      // Wait for ICE servers to be loaded
+      if (!iceServers) {
+        console.warn("ICE servers not loaded yet");
+        return null;
+      }
+
+      const pc = new RTCPeerConnection(iceServers);
 
       pc.onicecandidate = (event) => {
         if (event.candidate && socketRef.current) {
-          console.log("🧊 ICE Candidate:", {
+          console.log("[WebRTC] ICE Candidate:", {
             type: event.candidate.type,
             protocol: event.candidate.protocol,
             address: event.candidate.address,
@@ -179,7 +179,7 @@ export const CallProvider = ({ children }) => {
             callId,
           });
         } else if (!event.candidate) {
-          console.log("✅ All ICE candidates gathered");
+          console.log("[WebRTC] All ICE candidates gathered");
         }
       };
 
@@ -188,17 +188,17 @@ export const CallProvider = ({ children }) => {
       };
 
       pc.onconnectionstatechange = () => {
-        console.log("🔗 Connection State:", pc.connectionState);
-        console.log("🧊 ICE Connection State:", pc.iceConnectionState);
-        console.log("📡 ICE Gathering State:", pc.iceGatheringState);
+        console.log("[WebRTC] Connection State:", pc.connectionState);
+        console.log("[WebRTC] ICE Connection State:", pc.iceConnectionState);
+        console.log("[WebRTC] ICE Gathering State:", pc.iceGatheringState);
 
         if (pc.connectionState === "connected") {
-          console.log("✅ CALL CONNECTED!");
+          console.log("[WebRTC] Call connected successfully");
           setCallState((prev) => ({ ...prev, callStatus: "connected" }));
         } else if (
           ["disconnected", "failed", "closed"].includes(pc.connectionState)
         ) {
-          console.log("❌ Call ended or failed:", pc.connectionState);
+          console.log("[WebRTC] Call ended or failed:", pc.connectionState);
           endCall(recipientId, callId);
         }
       };
@@ -206,7 +206,7 @@ export const CallProvider = ({ children }) => {
       peerConnectionRef.current = pc;
       return pc;
     },
-    [socket]
+    [iceServers]
   );
 
   // Initiate a call

@@ -1,4 +1,5 @@
 import Call from "../models/Call.js";
+import { ENV } from "../lib/env.js";
 
 // Get call history for current user
 export const getCallHistory = async (req, res) => {
@@ -144,3 +145,97 @@ export const deleteCallRecord = async (req, res) => {
     });
   }
 };
+
+// Get TURN server configuration
+export const getTurnConfig = async (req, res) => {
+  try {
+    const cloudflareToken = ENV.CLOUDFLARE_TURN_TOKEN;
+
+    // Base STUN servers (always included)
+    const stunServers = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      { urls: "stun:stun3.l.google.com:19302" },
+      { urls: "stun:stun4.l.google.com:19302" },
+    ];
+
+    let turnServers = [];
+    let usingCloudflare = false;
+
+    // Use Cloudflare TURN servers if token is provided
+    if (cloudflareToken && cloudflareToken !== 'your_turn_token_here') {
+      usingCloudflare = true;
+      turnServers = [
+        {
+          urls: "turn:turn.cloudflare.com:3478",
+          username: "cloudflare",
+          credential: cloudflareToken,
+        },
+        {
+          urls: "turn:turn.cloudflare.com:3478?transport=tcp",
+          username: "cloudflare",
+          credential: cloudflareToken,
+        },
+        {
+          urls: "turns:turn.cloudflare.com:5349",
+          username: "cloudflare",
+          credential: cloudflareToken,
+        },
+        {
+          urls: "turns:turn.cloudflare.com:5349?transport=tcp",
+          username: "cloudflare",
+          credential: cloudflareToken,
+        },
+      ];
+    } else {
+      // Fallback to free TURN servers
+      turnServers = [
+        {
+          urls: "turn:openrelay.metered.ca:80",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:openrelay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:openrelay.metered.ca:443?transport=tcp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:80",
+          username: "87e89a13c60b75feb7ed",
+          credential: "mOYOjI8eTN3gbnCa",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:443",
+          username: "87e89a13c60b75feb7ed",
+          credential: "mOYOjI8eTN3gbnCa",
+        },
+        {
+          urls: "turn:a.relay.metered.ca:443?transport=tcp",
+          username: "87e89a13c60b75feb7ed",
+          credential: "mOYOjI8eTN3gbnCa",
+        },
+      ];
+    }
+
+    res.status(200).json({
+      success: true,
+      iceServers: [...stunServers, ...turnServers],
+      iceCandidatePoolSize: 10,
+      provider: usingCloudflare ? "cloudflare" : "free",
+    });
+  } catch (error) {
+    console.error("Error getting TURN config:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get TURN configuration",
+    });
+  }
+};
+

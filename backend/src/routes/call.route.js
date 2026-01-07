@@ -4,6 +4,7 @@ import {
   getCallHistory,
   getCallStats,
   deleteCallRecord,
+  getTurnConfig,
 } from "../controllers/call.controller.js";
 
 const router = express.Router();
@@ -16,5 +17,8 @@ router.get("/stats", protectRoute, getCallStats);
 
 // Delete a call record
 router.delete("/:callId", protectRoute, deleteCallRecord);
+
+// Get TURN server configuration (public endpoint - no auth required)
+router.get("/turn-config", getTurnConfig);
 
 export default router;

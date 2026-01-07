@@ -18,6 +18,7 @@ export const ENV = {
     EMAIL_PORT: process.env.EMAIL_PORT,
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
-
+    CLOUDFLARE_TURN_TOKEN: process.env.CLOUDFLARE_TURN_TOKEN,
+    CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
 
 }
