@@ -154,14 +154,21 @@ export const getTurnConfig = async (req, res) => {
 
     // Check if Cloudflare credentials are configured
     if (!turnTokenId || !apiToken) {
+      console.error("Cloudflare TURN credentials not configured");
       return res.status(500).json({
         success: false,
         message: "Cloudflare TURN credentials are not configured. Please set CLOUDFLARE_TURN_TOKEN_ID and CLOUDFLARE_TURN_API_TOKEN in environment variables.",
       });
     }
 
+    console.log("🔄 Generating Cloudflare TURN credentials...");
+    console.log("Token ID:", turnTokenId.substring(0, 8) + "...");
+
+    // Ensure fetch is available (Node.js >= 18 has native fetch)
+    const fetchFn = globalThis.fetch || (await import('node-fetch')).default;
+
     // Generate short-lived credentials from Cloudflare
-    const response = await fetch(
+    const response = await fetchFn(
       `https://rtc.live.cloudflare.com/v1/turn/keys/${turnTokenId}/credentials/generate`,
       {
         method: "POST",
@@ -177,14 +184,17 @@ export const getTurnConfig = async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Cloudflare API Error:", errorText);
+      console.error("Cloudflare API Error:", response.status, errorText);
       return res.status(500).json({
         success: false,
-        message: "Failed to generate TURN credentials from Cloudflare",
+        message: `Failed to generate TURN credentials from Cloudflare: ${response.status}`,
+        details: errorText,
       });
     }
 
     const data = await response.json();
+    console.log("Cloudflare TURN credentials generated successfully");
+    console.log("ICE Servers count:", data.iceServers?.length || 0);
 
     // Return the ICE servers configuration from Cloudflare
     res.status(200).json({
@@ -198,6 +208,7 @@ export const getTurnConfig = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to get TURN configuration",
+      error: error.message,
     });
   }
 };
