@@ -146,89 +146,52 @@ export const deleteCallRecord = async (req, res) => {
   }
 };
 
-// Get TURN server configuration
+// Get TURN server configuration (Cloudflare only)
 export const getTurnConfig = async (req, res) => {
   try {
-    const cloudflareToken = ENV.CLOUDFLARE_TURN_TOKEN;
+    const turnTokenId = ENV.CLOUDFLARE_TURN_TOKEN_ID;
+    const apiToken = ENV.CLOUDFLARE_TURN_API_TOKEN;
 
-    // Base STUN servers (always included)
-    const stunServers = [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" },
-      { urls: "stun:stun3.l.google.com:19302" },
-      { urls: "stun:stun4.l.google.com:19302" },
-    ];
-
-    let turnServers = [];
-    let usingCloudflare = false;
-
-    // Use Cloudflare TURN servers if token is provided
-    if (cloudflareToken && cloudflareToken !== 'your_turn_token_here') {
-      usingCloudflare = true;
-      turnServers = [
-        {
-          urls: "turn:turn.cloudflare.com:3478",
-          username: "cloudflare",
-          credential: cloudflareToken,
-        },
-        {
-          urls: "turn:turn.cloudflare.com:3478?transport=tcp",
-          username: "cloudflare",
-          credential: cloudflareToken,
-        },
-        {
-          urls: "turns:turn.cloudflare.com:5349",
-          username: "cloudflare",
-          credential: cloudflareToken,
-        },
-        {
-          urls: "turns:turn.cloudflare.com:5349?transport=tcp",
-          username: "cloudflare",
-          credential: cloudflareToken,
-        },
-      ];
-    } else {
-      // Fallback to free TURN servers
-      turnServers = [
-        {
-          urls: "turn:openrelay.metered.ca:80",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:openrelay.metered.ca:443",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:openrelay.metered.ca:443?transport=tcp",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:a.relay.metered.ca:80",
-          username: "87e89a13c60b75feb7ed",
-          credential: "mOYOjI8eTN3gbnCa",
-        },
-        {
-          urls: "turn:a.relay.metered.ca:443",
-          username: "87e89a13c60b75feb7ed",
-          credential: "mOYOjI8eTN3gbnCa",
-        },
-        {
-          urls: "turn:a.relay.metered.ca:443?transport=tcp",
-          username: "87e89a13c60b75feb7ed",
-          credential: "mOYOjI8eTN3gbnCa",
-        },
-      ];
+    // Check if Cloudflare credentials are configured
+    if (!turnTokenId || !apiToken) {
+      return res.status(500).json({
+        success: false,
+        message: "Cloudflare TURN credentials are not configured. Please set CLOUDFLARE_TURN_TOKEN_ID and CLOUDFLARE_TURN_API_TOKEN in environment variables.",
+      });
     }
 
+    // Generate short-lived credentials from Cloudflare
+    const response = await fetch(
+      `https://rtc.live.cloudflare.com/v1/turn/keys/${turnTokenId}/credentials/generate`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ttl: 86400, // 24 hours validity
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Cloudflare API Error:", errorText);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate TURN credentials from Cloudflare",
+      });
+    }
+
+    const data = await response.json();
+
+    // Return the ICE servers configuration from Cloudflare
     res.status(200).json({
       success: true,
-      iceServers: [...stunServers, ...turnServers],
+      iceServers: data.iceServers,
       iceCandidatePoolSize: 10,
-      provider: usingCloudflare ? "cloudflare" : "free",
+      provider: "cloudflare",
     });
   } catch (error) {
     console.error("Error getting TURN config:", error);
